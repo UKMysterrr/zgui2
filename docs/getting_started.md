@@ -1,5 +1,9 @@
 # Getting started
 
+See the [build instructions](../README.md#build-and-run) for the core and
+`zgui_example`, and [FetchContent usage](../README.md#using-zgui-with-fetchcontent)
+for integrating the `src/` public headers in another CMake project.
+
 The core owns no platform window. Initialize it with application-owned
 `Graphics` and `Input` implementations, build a `WindowManager`, then call
 `update()` and `draw()` once per frame while the graphics backend's frame is

@@ -51,10 +51,10 @@ void add_owned_checkbox(zgui::Window& window) {
 
 ## Text
 
-zgui text is ASCII (`0x20` through `0x7e`). The SDL2/OpenGL backend maps every
-other byte to `?` for rendering and measurement. `TextInput` accepts printable
-ASCII bytes, handles backspace separately, and ignores other input bytes;
-therefore UTF-8 input is not supported.
+`TextInput` accepts printable ASCII bytes (`0x20` through `0x7e`), handles
+backspace separately, and ignores other input bytes. The SDL2/OpenGL backend
+also renders a UTF-8 em dash; other non-ASCII bytes map to `?` for rendering
+and measurement. General UTF-8 input is not supported.
 
 Future work: UTF-8 and multiple font sizes. Replacing the byte-oriented
 `Input::pop_text_input(char&)` interface would be an API break. A possible future
@@ -63,8 +63,9 @@ containing one complete UTF-8 code point.
 
 ## Architecture and ownership
 
-The public API is in `zgui.hh`; `zgui.cc` implements widgets and window
-management. The optional SDL2/OpenGL backend adapts platform events and
+The public API is in [`src/zgui.hh`](../src/zgui.hh);
+[`src/zgui.cc`](../src/zgui.cc) implements widgets and window management.
+The optional SDL2/OpenGL backend adapts platform events and
 OpenGL 2.1 drawing. Core code depends only on the C++ standard library.
 
 `UIElement` stores raw child pointers for traversal and retains children added

@@ -6,113 +6,65 @@ include(CMakePackageConfigHelpers)
 
 option(ZGUI_BUILD_SHARED "Build zgui as a shared library" OFF)
 option(ZGUI_BUILD_BACKEND_SDL2_OPENGL "Build the SDL2/OpenGL backend when available" ON)
-option(ZGUI_BUILD_EXAMPLES "Build examples" OFF)
+option(ZGUI_BUILD_EXAMPLES "Build the interactive example" OFF)
 option(ZGUI_WARNINGS_AS_ERRORS "Treat project compiler warnings as errors" OFF)
-option(ZGUI_NO_EXCEPTIONS "Build the core and tests without C++ exceptions where supported" OFF)
-
+option(ZGUI_NO_EXCEPTIONS "Build the core without C++ exceptions where supported" OFF)
 if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
-    set(_zgui_tests_default ON)
     set(_zgui_install_default ON)
 else()
-    set(_zgui_tests_default OFF)
     set(_zgui_install_default OFF)
 endif()
-option(ZGUI_BUILD_TESTS "Build the headless tests" ${_zgui_tests_default})
 option(ZGUI_INSTALL "Install zgui and its CMake package" ${_zgui_install_default})
 
 if(ZGUI_BUILD_SHARED)
-    add_library(zgui SHARED zgui.cc)
+    add_library(zgui SHARED src/zgui.cc)
 else()
-    add_library(zgui STATIC zgui.cc)
+    add_library(zgui STATIC src/zgui.cc)
 endif()
 add_library(zgui::zgui ALIAS zgui)
 target_include_directories(zgui PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 target_compile_features(zgui PUBLIC cxx_std_17)
 
 function(zgui_apply_project_options target)
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /permissive- /utf-8)
+        if(ZGUI_WARNINGS_AS_ERRORS)
+            target_compile_options(${target} PRIVATE /WX)
+        endif()
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         target_compile_options(${target} PRIVATE
-            -Wall
-            -Wextra
-            -Wpedantic
-            -Wshadow
-            -Wconversion
-            -Wsign-conversion
-            -Wold-style-cast
-            -Wnon-virtual-dtor
-            -Woverloaded-virtual
-            -Wnull-dereference
-            -Wformat=2)
+            -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion
+            -Wold-style-cast -Wnon-virtual-dtor -Woverloaded-virtual
+            -Wnull-dereference -Wformat=2)
         if(ZGUI_WARNINGS_AS_ERRORS)
             target_compile_options(${target} PRIVATE -Werror)
         endif()
-        if(ZGUI_NO_EXCEPTIONS AND
-           ("${target}" STREQUAL "zgui" OR
-            "${target}" STREQUAL "zgui_testing" OR
-            "${target}" STREQUAL "zgui_tests"))
+        if(ZGUI_NO_EXCEPTIONS AND "${target}" STREQUAL "zgui")
             target_compile_options(${target} PRIVATE -fno-exceptions)
         endif()
     endif()
 endfunction()
-
 zgui_apply_project_options(zgui)
-
-add_library(zgui_testing STATIC
-    tests/support/mock_graphics.cc
-    tests/support/mock_input.cc
-    tests/support/test_context.cc)
-add_library(zgui::testing ALIAS zgui_testing)
-set_target_properties(zgui_testing PROPERTIES EXPORT_NAME testing)
-target_include_directories(zgui_testing PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/tests/support>
-    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/zgui/testing>)
-target_link_libraries(zgui_testing PUBLIC zgui::zgui)
-target_compile_features(zgui_testing PUBLIC cxx_std_17)
-zgui_apply_project_options(zgui_testing)
-
-if(ZGUI_INSTALL)
-    set(zgui_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/zgui")
-    install(TARGETS zgui zgui_testing
-        EXPORT zguiTargets
-        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
-    install(FILES zgui.hh DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
-    install(FILES
-        tests/support/mock_graphics.hh
-        tests/support/mock_input.hh
-        tests/support/test_context.hh
-        tests/support/test_harness.hh
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/zgui/testing")
-    install(EXPORT zguiTargets
-        FILE zguiTargets.cmake
-        NAMESPACE zgui::
-        DESTINATION "${zgui_INSTALL_CMAKEDIR}")
-endif()
-
-find_package(OpenGL QUIET)
-find_package(SDL2 QUIET CONFIG)
-set(_zgui_sdl2_target "")
-if(TARGET SDL2::SDL2)
-    set(_zgui_sdl2_target SDL2::SDL2)
-elseif(TARGET SDL2::SDL2-static)
-    set(_zgui_sdl2_target SDL2::SDL2-static)
-else()
-    find_package(PkgConfig QUIET)
-    if(PkgConfig_FOUND)
-        pkg_check_modules(SDL2_PC QUIET IMPORTED_TARGET sdl2)
-        if(TARGET PkgConfig::SDL2_PC)
-            set(_zgui_sdl2_target PkgConfig::SDL2_PC)
-        endif()
-    endif()
-endif()
 
 set(_zgui_install_backend FALSE)
 if(ZGUI_BUILD_BACKEND_SDL2_OPENGL)
+    find_package(OpenGL QUIET)
+    find_package(SDL2 QUIET CONFIG)
+    if(TARGET SDL2::SDL2)
+        set(_zgui_sdl2_target SDL2::SDL2)
+    elseif(TARGET SDL2::SDL2-static)
+        set(_zgui_sdl2_target SDL2::SDL2-static)
+    else()
+        find_package(PkgConfig QUIET)
+        if(PkgConfig_FOUND)
+            pkg_check_modules(SDL2_PC QUIET IMPORTED_TARGET sdl2)
+            if(TARGET PkgConfig::SDL2_PC)
+                set(_zgui_sdl2_target PkgConfig::SDL2_PC)
+            endif()
+        endif()
+    endif()
     if(_zgui_sdl2_target AND OpenGL_FOUND)
         add_library(zgui_sdl2_opengl backends/sdl2_opengl/zgui_impl_sdl2_opengl.cc)
         add_library(zgui::sdl2_opengl ALIAS zgui_sdl2_opengl)
@@ -120,47 +72,68 @@ if(ZGUI_BUILD_BACKEND_SDL2_OPENGL)
         target_include_directories(zgui_sdl2_opengl PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/backends/sdl2_opengl>
             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
-        target_link_libraries(zgui_sdl2_opengl PUBLIC zgui::zgui
-            ${_zgui_sdl2_target} OpenGL::GL)
+        target_link_libraries(zgui_sdl2_opengl PUBLIC zgui::zgui ${_zgui_sdl2_target} OpenGL::GL)
         target_compile_features(zgui_sdl2_opengl PUBLIC cxx_std_17)
         zgui_apply_project_options(zgui_sdl2_opengl)
-        if(ZGUI_INSTALL)
-            set(_zgui_install_backend TRUE)
-            install(TARGETS zgui_sdl2_opengl EXPORT zguiBackendTargets
-                ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-                LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-                RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
-            install(FILES backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh
-                DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
-            install(EXPORT zguiBackendTargets FILE zguiBackendTargets.cmake
-                NAMESPACE zgui:: DESTINATION "${zgui_INSTALL_CMAKEDIR}")
-        endif()
+        set(_zgui_install_backend TRUE)
     else()
-        message(STATUS
-            "Skipping zgui_sdl2_opengl: SDL2 and OpenGL development packages are required")
+        message(STATUS "Skipping zgui_sdl2_opengl: SDL2 and OpenGL development packages are required")
     endif()
 endif()
 
 if(ZGUI_INSTALL)
-    configure_package_config_file(
-        cmake/zguiConfig.cmake.in
-        "${CMAKE_CURRENT_BINARY_DIR}/zguiConfig.cmake"
-        INSTALL_DESTINATION "${zgui_INSTALL_CMAKEDIR}")
-    write_basic_package_version_file(
-        "${CMAKE_CURRENT_BINARY_DIR}/zguiConfigVersion.cmake"
-        VERSION "${PROJECT_VERSION}"
-        COMPATIBILITY SameMajorVersion)
-    install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/zguiConfig.cmake"
+    set(zgui_INSTALL_CMAKEDIR "${CMAKE_INSTALL_LIBDIR}/cmake/zgui")
+    install(TARGETS zgui EXPORT zguiTargets
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+    install(FILES src/zgui.hh DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+    install(EXPORT zguiTargets FILE zguiTargets.cmake NAMESPACE zgui::
+        DESTINATION "${zgui_INSTALL_CMAKEDIR}")
+    if(_zgui_install_backend)
+        install(TARGETS zgui_sdl2_opengl EXPORT zguiBackendTargets
+            ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+            LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+            RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+        install(FILES backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh
+            DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+        install(EXPORT zguiBackendTargets FILE zguiBackendTargets.cmake NAMESPACE zgui::
+            DESTINATION "${zgui_INSTALL_CMAKEDIR}")
+    endif()
+    set(_zgui_config [=[
+include("${CMAKE_CURRENT_LIST_DIR}/zguiTargets.cmake")
+set(zgui_sdl2_opengl_FOUND FALSE)
+if(@_zgui_install_backend@)
+    find_package(OpenGL QUIET)
+    if("@_zgui_sdl2_target@" STREQUAL "PkgConfig::SDL2_PC")
+        find_package(PkgConfig QUIET)
+        if(PkgConfig_FOUND)
+            pkg_check_modules(SDL2_PC QUIET IMPORTED_TARGET sdl2)
+        endif()
+    else()
+        find_package(SDL2 QUIET CONFIG)
+    endif()
+    if(OpenGL_FOUND AND TARGET @_zgui_sdl2_target@)
+        include("${CMAKE_CURRENT_LIST_DIR}/zguiBackendTargets.cmake")
+        set(zgui_sdl2_opengl_FOUND TRUE)
+    endif()
+endif()
+foreach(_component IN LISTS zgui_FIND_COMPONENTS)
+    if(NOT zgui_${_component}_FOUND AND zgui_FIND_REQUIRED_${_component})
+        set(zgui_FOUND FALSE)
+        set(zgui_NOT_FOUND_MESSAGE "Required zgui component '${_component}' is unavailable")
+    endif()
+endforeach()
+]=])
+    string(CONFIGURE "${_zgui_config}" _zgui_config @ONLY)
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/zguiConfig.cmake" "${_zgui_config}")
+    write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/zguiConfigVersion.cmake"
+        VERSION "${PROJECT_VERSION}" COMPATIBILITY SameMajorVersion)
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/zguiConfig.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/zguiConfigVersion.cmake"
         DESTINATION "${zgui_INSTALL_CMAKEDIR}")
 endif()
 
-if(ZGUI_BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(tests)
-endif()
-
 if(ZGUI_BUILD_EXAMPLES)
-    add_subdirectory(examples)
+    add_subdirectory(example)
 endif()

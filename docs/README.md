@@ -7,4 +7,5 @@
 - [Widgets](widgets.md): constructors, bindings, callbacks, and edge behavior.
 - [Layout](layout.md): anchors, constraints, stack rows, tabs, and validation.
 - [Design decisions](design.md): runtime, ownership, errors, and future work.
-- [Contributing](../CONTRIBUTING.md): style, tests, and widget checklist.
+- [Build and example](../README.md): build options, FetchContent, and the
+  two-window interactive example.

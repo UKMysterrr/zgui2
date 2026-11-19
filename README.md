@@ -1,5 +1,7 @@
 # zgui
 
+![zgui2 preview](docs/zgui2.gif)
+
 zgui is a retained-mode, dependency-free C++17 GUI toolkit. The core in
 [`src/`](src/) provides widgets, layout, clipping, and window management;
 applications provide graphics and input implementations. An optional SDL2 /
@@ -26,19 +28,6 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DZGUI_BUILD_BACKEND_SDL2_OPENGL=
 cmake --build build
 build/example/zgui_example
 ```
-
-The primary window has Classic and Extended tabs. The inspector shows live
-values, a theme switcher, a selectable table with draggable column boundaries,
-and a perspective wireframe cube: drag to orbit, scroll to zoom, or double-click
-to reset the view. Amount changes idle rotation speed and guide-grid density.
-Enable both Show guides and the Guides layer to see the floor and XYZ axes;
-Wireframe and Bounding Box control the other canvas layers independently.
-The accent picker updates both windows and the cube, including across theme
-switches. Reset Defaults restores the controls, theme, selection, and view.
-Drag either title bar to focus and move its window;
-drag the bottom-right corner to resize. Click the color swatch's Pick button
-to open its HSV/alpha editor. The login form is a demonstration, not an
-authentication system: the password is only masked on screen.
 
 For bounded smoke runs, use `zgui_example --frames 60 --theme dark` (or
 `--theme light`); the frame count must be positive. On a headless Linux host:

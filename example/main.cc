@@ -12,10 +12,14 @@
 #include <cstdint>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <string>
 
 namespace {
     using namespace zgui;
+
+    constexpr std::array<const char*, 8> workspaces{
+        "Overview", "Controls", "Canvas", "Colors", "Layout", "Inspector", "Shortcuts", "About"};
 
     struct State {
         int amount = 25;
@@ -34,7 +38,7 @@ namespace {
         float yaw = 0.45f;
         float pitch = -0.35f;
         std::chrono::steady_clock::time_point last_frame = std::chrono::steady_clock::now();
-        std::string selection = "None";
+        std::optional<std::size_t> selection;
         std::shared_ptr<Window> inspector;
         std::shared_ptr<KeyBind> key_bind;
         std::shared_ptr<TableView> table;
@@ -187,14 +191,14 @@ namespace {
         place(*right, std::make_shared<Label>("Select a workspace"), {10.f, 166.f},
               {210.f, 16.f});
         auto scroll = place(*right, std::make_shared<ScrollArea>(), {10.f, 185.f}, {210.f, 150.f});
-        const std::vector<std::string> items{"Overview", "Controls", "Canvas", "Colors", "Layout",
-                                             "Inspector", "Shortcuts", "About"};
-        for (std::size_t i = 0; i < items.size(); ++i) {
-            const std::string item = items[i];
+        for (std::size_t i = 0; i < workspaces.size(); ++i) {
             place(*scroll,
-                  std::make_shared<ClickableLabel>(item, [&state, item] {
-                      state.selection = item;
-                  }, [&state, item] { return state.selection == item; }),
+                  std::make_shared<ClickableLabel>(workspaces[i], [&state, i] {
+                      if (state.selection == i)
+                          state.selection.reset();
+                      else
+                          state.selection = i;
+                  }, [&state, i] { return state.selection == i; }),
                   {8.f, 5.f + static_cast<float>(i) * 22.f}, {175.f, 18.f});
         }
         place(*right, std::make_shared<Label>("Selection appears in the inspector."), {10.f, 379.f},
@@ -404,7 +408,8 @@ int main(int argc, char** argv) {
                     6.2831853f);
             state.progress = static_cast<float>(state.amount) / 100.f;
             const std::vector<std::string> values{
-                std::to_string(state.amount), std::to_string(state.scale), state.selection,
+                std::to_string(state.amount), std::to_string(state.scale),
+                state.selection ? workspaces[*state.selection] : "None",
                 std::vector<std::string>{"Windowed", "Borderless", "Fullscreen"}[state.mode],
                 state.enabled ? "Yes" : "No", "Resize this column to see the full text"};
             for (std::size_t i = 0; i < values.size(); ++i)

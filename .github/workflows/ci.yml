@@ -1,0 +1,175 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  documentation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install documentation example dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libsdl2-dev libgl1-mesa-dev
+      - name: Check links
+        run: python3 tools/check_doc_links.py
+      - name: Compile C++ examples
+        run: python3 tools/check_doc_snippets.py
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes clang-format
+      - name: Check C++ formatting
+        run: >-
+          git ls-files -z -- '*.cc' '*.hh' |
+          xargs -0 -r clang-format --style=file:.clang-format --dry-run --Werror
+
+  core:
+    name: Core / ${{ matrix.os }} / ${{ matrix.compiler }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            compiler: GCC
+            cc: gcc
+            cxx: g++
+          - os: ubuntu-latest
+            compiler: Clang
+            cc: clang
+            cxx: clang++
+          - os: macos-latest
+            compiler: Clang
+            cc: clang
+            cxx: clang++
+          - os: windows-latest
+            compiler: MSVC
+            cc: ""
+            cxx: ""
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure with GCC or Clang
+        if: matrix.compiler != 'MSVC'
+        env:
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: >-
+          cmake -S . -B build/ci
+          -DCMAKE_BUILD_TYPE=Release
+          -DZGUI_BUILD_TESTS=ON
+          -DZGUI_BUILD_BACKEND_SDL2_OPENGL=OFF
+          -DZGUI_WARNINGS_AS_ERRORS=ON
+      - name: Configure with MSVC
+        if: matrix.compiler == 'MSVC'
+        run: >-
+          cmake -S . -B build/ci
+          -DCMAKE_BUILD_TYPE=Release
+          -DZGUI_BUILD_TESTS=ON
+          -DZGUI_BUILD_BACKEND_SDL2_OPENGL=OFF
+          -DZGUI_WARNINGS_AS_ERRORS=ON
+      - name: Build
+        run: cmake --build build/ci --config Release --parallel
+      - name: Test
+        run: ctest --test-dir build/ci -C Release --output-on-failure
+
+  sanitizers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake --preset asan-ubsan
+      - name: Build
+        run: cmake --build --preset asan-ubsan --parallel 2
+      - name: Test
+        run: ctest --preset asan-ubsan --output-on-failure
+
+  no-exceptions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake --preset no-exceptions
+      - name: Build
+        run: cmake --build --preset no-exceptions --parallel 2
+      - name: Test
+        run: ctest --preset no-exceptions --output-on-failure
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake --preset coverage
+      - name: Build
+        run: cmake --build --preset coverage --parallel 2
+      - name: Test
+        run: ctest --preset coverage --output-on-failure
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-data
+          path: build/coverage/
+          if-no-files-found: error
+
+  install-consumer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure and build library
+        run: |
+          cmake -S . -B build/package -DCMAKE_BUILD_TYPE=Release \
+            -DZGUI_BUILD_TESTS=OFF -DZGUI_BUILD_BACKEND_SDL2_OPENGL=OFF
+          cmake --build build/package --parallel 2
+          cmake --install build/package --prefix "$GITHUB_WORKSPACE/build/install"
+      - name: Configure, build, and run consumer
+        run: |
+          cmake -S tests/install_consumer -B build/install-consumer \
+            -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/build/install" \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/install-consumer --parallel 2
+          ./build/install-consumer/zgui_install_consumer
+
+  packed-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate packed distribution
+        run: python3 tools/pack.py
+      - name: Configure, build, and test packed sources
+        run: |
+          cmake -S tests/packed -B build/packed -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/packed --parallel 2
+          ctest --test-dir build/packed -C Release --output-on-failure
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install backend dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libsdl2-dev libgl1-mesa-dev xvfb
+      - name: Configure
+        run: >-
+          cmake -S . -B build/backend
+          -DCMAKE_BUILD_TYPE=Release
+          -DZGUI_BUILD_TESTS=ON
+          -DZGUI_BUILD_BACKEND_SDL2_OPENGL=ON
+          -DZGUI_BUILD_EXAMPLES=ON
+          -DZGUI_WARNINGS_AS_ERRORS=ON
+      - name: Build
+        run: cmake --build build/backend --parallel 2
+      - name: Test
+        run: ctest --test-dir build/backend --output-on-failure
+      - name: Run showcase smoke test
+        run: >-
+          timeout 60s xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1
+          build/backend/examples/zgui_showcase
+          --frames 60 --theme light --fuzz

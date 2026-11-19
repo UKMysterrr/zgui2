@@ -1,0 +1,481 @@
+zgui.hh:8: #define ZGUI_VERSION_MAJOR 0
+zgui.hh:9: #define ZGUI_VERSION_MINOR 1
+zgui.hh:10: #define ZGUI_VERSION_PATCH 0
+zgui.hh:11: #define ZGUI_VERSION_STRING "0.1.0"
+zgui.hh:15: #define DRAW_UPDATE(ui_element) ::zgui::draw_and_update(*(ui_element))
+zgui.hh:33: namespace zgui {
+zgui.hh:42: explicit Bound(std::shared_ptr<T> value) : value_(std::move(value))
+zgui.hh:45: T* get() const
+zgui.hh:50: const std::shared_ptr<T>& owner() const
+zgui.hh:55: explicit operator bool() const
+zgui.hh:61: template <typename T> Bound<T> bound(T value)
+zgui.hh:65: namespace spacing {
+zgui.hh:66: inline constexpr float kTabBarHeight = 24.f
+zgui.hh:67: inline constexpr float kTabLabelHorizontalPadding = 10.f
+zgui.hh:69: inline constexpr float kTabLabelMinimumPadding = 4.f
+zgui.hh:70: [[deprecated("use spacing::kTabLabelHorizontalPadding")]] inline constexpr float tab_label_horizontal_padding = kTabLabelHorizontalPadding
+zgui.hh:72: inline constexpr float kGroupTitleHeight = 14.f
+zgui.hh:73: inline constexpr float kGroupTitleGap = 6.f
+zgui.hh:74: inline constexpr float kGroupInnerPadding = 8.f
+zgui.hh:75: inline constexpr float kGroupBorderTopInset = 6.f
+zgui.hh:78: inline constexpr float kSubTabStripInset = 8.f
+zgui.hh:79: inline constexpr float kGroupBottomPad = 6.f
+zgui.hh:80: inline constexpr float kGroupSubTabTop = kGroupTitleHeight + kGroupTitleGap
+zgui.hh:81: inline constexpr float kSubTabBarHeight = 18.f
+zgui.hh:82: inline constexpr float kSubTabBarBottomGap = 6.f
+zgui.hh:83: inline constexpr float kMinimumSubTabPageHeight = 8.f
+zgui.hh:84: inline constexpr float kCheckboxSize = 11.f
+zgui.hh:85: inline constexpr float kCheckboxLabelGap = 6.f
+zgui.hh:86: inline constexpr float kSliderLabelHeight = 17.f
+zgui.hh:87: inline constexpr float kSliderTrackHeight = 4.f
+zgui.hh:88: inline constexpr float kSliderTrackInset = 1.f
+zgui.hh:89: inline constexpr float kSliderInnerTrackHeight = 2.f
+zgui.hh:90: inline constexpr float kSliderThumbWidth = 5.f
+zgui.hh:91: inline constexpr float kSliderThumbHeight = 11.f
+zgui.hh:92: inline constexpr float kSliderThumbVerticalOffset = 3.f
+zgui.hh:93: inline constexpr float kCheckboxRowPitch = 20.f
+zgui.hh:94: inline constexpr float kDefaultStackStartY = 0.f
+zgui.hh:95: inline constexpr float kGroupStackStartY = 20.f
+zgui.hh:96: inline constexpr float kCompactPageStackStartY = 2.f
+zgui.hh:98: inline constexpr float kPageStackStartY = 8.f
+zgui.hh:99: inline constexpr float kPageHorizontalPadding = 0.f
+zgui.hh:100: inline constexpr float kPageRowGap = 2.f
+zgui.hh:101: inline constexpr float kStackHorizontalPadding = 8.f
+zgui.hh:102: inline constexpr float kWideStackHorizontalPadding = 8.f
+zgui.hh:103: inline constexpr float kCompactPageHorizontalPadding = 4.f
+zgui.hh:104: inline constexpr float kStackRowGap = 2.f
+zgui.hh:105: inline constexpr float kLooseStackRowGap = 3.f
+zgui.hh:106: inline constexpr float kDefaultRowHeight = 14.f
+zgui.hh:107: inline constexpr float kCompactControlHeight = 15.f
+zgui.hh:108: inline constexpr float kColorButtonRowHeight = 52.f
+zgui.hh:109: [[deprecated("use spacing::kCheckboxSize")]] inline constexpr float checkbox_size =
+zgui.hh:111: [[deprecated("use spacing::kCheckboxLabelGap")]] inline constexpr float checkbox_label_gap =
+zgui.hh:113: [[deprecated("use spacing::kGroupTitleHeight")]] inline constexpr float group_title_height =
+zgui.hh:115: [[deprecated( "use spacing::kGroupInnerPadding")]] inline constexpr float group_inner_padding = kGroupInnerPadding
+zgui.hh:118: [[deprecated("use spacing::kGroupSubTabTop")]] inline constexpr float group_subtab_top =
+zgui.hh:123: class Color {
+zgui.hh:130: : r(red), g(green), b(blue), a(alpha)
+zgui.hh:139: struct Theme {
+zgui.hh:153: class Point {
+zgui.hh:159: Point(float x_value, float y_value) : x(x_value), y(y_value)
+zgui.hh:166: struct Rect {
+zgui.hh:171: bool contains(Point point) const
+zgui.hh:178: class Vertex {
+zgui.hh:183: Vertex(Point position_value, Point coordinates_value, Color color_value) : position(position_value), coordinates(coordinates_value), color(color_value)
+zgui.hh:192: enum class VertexTopology { LINE_LIST, LINE_STRIP, TRIANGLE_LIST, TRIANGLE_STRIP };
+zgui.hh:195: class Graphics {
+zgui.hh:197: struct ClipRect {
+zgui.hh:206: virtual void append_geometry(const std::vector<Vertex>& vertices, std::size_t count)
+zgui.hh:207: virtual void set_topology(VertexTopology vertex_topology)
+zgui.hh:222: virtual void flush()
+zgui.hh:234: virtual Point viewport_size() const
+zgui.hh:241: void push_clip_rect(int x, int y, int w, int h)
+zgui.hh:243: void pop_clip_rect()
+zgui.hh:245: std::size_t clip_depth() const
+zgui.hh:247: void draw_line(Point start, Point end, Color color)
+zgui.hh:249: void draw_rect(Point position, Point size, Color color)
+zgui.hh:251: void fill_rect(Point position, Point size, Color color)
+zgui.hh:253: [[deprecated("use fill_rect")]] void draw_filled_rect(Point position, Point size, Color color)
+zgui.hh:255: fill_rect(position, size, color)
+zgui.hh:258: void draw_gradient_rect(Point position, Point size, Color top_left, Color top_right, Color bottom_right, Color bottom_left)
+zgui.hh:261: void draw_frame(Point position, Point size, Color fill)
+zgui.hh:265: class Input {
+zgui.hh:293: virtual bool text_cursor_left_pressed() const
+zgui.hh:297: virtual bool text_cursor_right_pressed() const
+zgui.hh:301: virtual bool text_cursor_home_pressed() const
+zgui.hh:305: virtual bool text_cursor_end_pressed() const
+zgui.hh:309: virtual bool text_delete_pressed() const
+zgui.hh:313: enum class MouseButton { left, middle, right };
+zgui.hh:315: virtual bool mouse_button_down(MouseButton button) const
+zgui.hh:319: virtual Point mouse_delta() const
+zgui.hh:323: virtual bool mouse_double_clicked() const
+zgui.hh:327: virtual bool escape_pressed() const
+zgui.hh:333: struct ViewportInput {
+zgui.hh:341: class WindowManager;
+zgui.hh:342: class TextInput;
+zgui.hh:345: namespace core {
+zgui.hh:356: inline bool require_initialized()
+zgui.hh:358: assert(ready && "zgui core is not initialized
+zgui.hh:363: inline void set_theme(const Theme& theme)
+zgui.hh:368: inline void reset_theme()
+zgui.hh:373: inline void shutdown()
+zgui.hh:376: graphics.reset()
+zgui.hh:377: input.reset()
+zgui.hh:379: text_truncations.clear()
+zgui.hh:380: reset_theme()
+zgui.hh:384: inline void initialize(std::shared_ptr<zgui::Graphics> new_graphics, std::shared_ptr<zgui::Input> new_input)
+zgui.hh:386: assert(new_graphics && new_input && "core::initialize requires non-null graphics and input")
+zgui.hh:389: shutdown()
+zgui.hh:392: shutdown()
+zgui.hh:399: class UIElement {
+zgui.hh:423: void adjust_for_parent_resize(Point old_size, Point new_size)
+zgui.hh:429: virtual ~UIElement()
+zgui.hh:436: void add_child(UIElement* child)
+zgui.hh:438: void add_child(const std::shared_ptr<UIElement>& child)
+zgui.hh:440: void remove_child(UIElement* child)
+zgui.hh:442: void clear_children()
+zgui.hh:444: void set_parent(UIElement* parent)
+zgui.hh:447: virtual void draw()
+zgui.hh:449: virtual void update()
+zgui.hh:451: virtual bool handle_mouse_press(Point position)
+zgui.hh:453: virtual bool handles_mouse_wheel(Point position) const
+zgui.hh:456: const Point& get_position() const
+zgui.hh:458: Point get_absolute_position() const
+zgui.hh:460: void set_position(const Point& position)
+zgui.hh:462: void set_anchors(bool left, bool right, bool top, bool bottom)
+zgui.hh:464: void set_horizontal_constraints(float left_fraction, float right_fraction, float left_offset, float right_offset)
+zgui.hh:467: void set_vertical_constraints(float top_fraction, float bottom_fraction, float top_offset, float bottom_offset)
+zgui.hh:471: const Point& get_size() const
+zgui.hh:473: virtual void set_size(const Point& size)
+zgui.hh:475: bool contains_point(Point position) const
+zgui.hh:477: virtual Rect child_clip_rect() const
+zgui.hh:479: virtual Point child_offset() const
+zgui.hh:481: virtual float content_bottom() const
+zgui.hh:483: virtual float content_right() const
+zgui.hh:485: virtual std::size_t widget_count() const
+zgui.hh:487: virtual std::size_t visible_widget_count() const
+zgui.hh:490: void set_title(std::string title)
+zgui.hh:492: const std::string& get_title() const
+zgui.hh:496: inline void draw_and_update(UIElement& element)
+zgui.hh:497: element.draw()
+zgui.hh:498: element.update()
+zgui.hh:503: inline void draw_and_update(const P& element)
+zgui.hh:504: draw_and_update(*element)
+zgui.hh:508: enum class TextAlignment { left, center, right };
+zgui.hh:511: enum class SeparatorOrientation { horizontal, vertical };
+zgui.hh:514: class Separator : public UIElement {
+zgui.hh:524: void set_orientation(SeparatorOrientation orientation)
+zgui.hh:526: void set_label(std::string label)
+zgui.hh:528: void draw() override
+zgui.hh:532: class Label : public UIElement {
+zgui.hh:543: void set_text(std::string text)
+zgui.hh:545: void set_alignment(TextAlignment alignment)
+zgui.hh:547: void set_color(Color color)
+zgui.hh:549: void clear_color_override()
+zgui.hh:551: void draw() override
+zgui.hh:555: class Button : public UIElement {
+zgui.hh:557: std::function<void()> on_click_
+zgui.hh:565: void set_on_click(std::function<void()> on_click)
+zgui.hh:567: void draw() override
+zgui.hh:569: void update() override
+zgui.hh:571: bool handle_mouse_press(Point position) override
+zgui.hh:575: class CheckBox : public UIElement {
+zgui.hh:580: std::function<void()> on_change_
+zgui.hh:587: : CheckBox(std::move(label), &value, std::move(on_change))
+zgui.hh:590: : CheckBox(std::move(label), value.get(), std::move(on_change))
+zgui.hh:595: void set_on_change(std::function<void()> on_change)
+zgui.hh:597: void set_value(bool* value)
+zgui.hh:599: void draw() override
+zgui.hh:601: bool handle_mouse_press(Point position) override
+zgui.hh:605: class ToggleButton : public UIElement {
+zgui.hh:610: std::function<void()> on_change_
+zgui.hh:618: : ToggleButton(std::move(label), &value, std::move(on_change))
+zgui.hh:620: ToggleButton(std::string label, const Bound<bool>& value, std::function<void()> on_change =
+zgui.hh:624: void set_on_change(std::function<void()> on_change)
+zgui.hh:626: void set_value(bool value)
+zgui.hh:628: bool get_value() const
+zgui.hh:630: void draw() override
+zgui.hh:632: void update() override
+zgui.hh:634: bool handle_mouse_press(Point position) override
+zgui.hh:638: class RadioGroup : public UIElement {
+zgui.hh:640: static constexpr float row_height_ = 18.f
+zgui.hh:646: std::function<void(std::size_t)> on_change_
+zgui.hh:650: RadioGroup(std::vector<std::string> items, std::size_t* selected_index, std::function<void(std::size_t)> on_change =
+zgui.hh:653: RadioGroup(std::vector<std::string> items, std::size_t& selected_index, std::function<void(std::size_t)> on_change =
+zgui.hh:655: : RadioGroup(std::move(items), &selected_index, std::move(on_change))
+zgui.hh:657: RadioGroup(std::vector<std::string> items, const Bound<std::size_t>& selected_index, std::function<void(std::size_t)> on_change =
+zgui.hh:663: std::size_t get_selected_index() const
+zgui.hh:665: void set_on_change(std::function<void(std::size_t)> on_change)
+zgui.hh:667: void draw() override
+zgui.hh:669: bool handle_mouse_press(Point position) override
+zgui.hh:673: class ProgressBar : public UIElement {
+zgui.hh:684: : ProgressBar(&value, std::move(text))
+zgui.hh:689: void set_value(float value)
+zgui.hh:691: float get_value() const
+zgui.hh:693: void set_text(std::string text)
+zgui.hh:695: void draw() override
+zgui.hh:699: class Tooltip : public UIElement {
+zgui.hh:706: void dismiss()
+zgui.hh:710: explicit Tooltip(std::string text, std::chrono::milliseconds delay = std::chrono::milliseconds(500))
+zgui.hh:712: ~Tooltip() override
+zgui.hh:715: void set_text(std::string text)
+zgui.hh:717: void set_delay(std::chrono::milliseconds delay)
+zgui.hh:719: void draw() override
+zgui.hh:721: void update() override
+zgui.hh:726: static_assert(std::is_arithmetic<T>::value, "Slider requires an arithmetic value type")
+zgui.hh:734: std::function<void()> on_change_
+zgui.hh:737: std::string format_value() const
+zgui.hh:740: stream << std::fixed << std::setprecision(2) << *value_
+zgui.hh:747: void update_from_mouse()
+zgui.hh:763: set_value(next)
+zgui.hh:768: Slider(std::string title, T* value, T minimum, T maximum, std::function<void()> on_change =
+zgui.hh:770: : value_(value), minimum_(std::min(minimum, maximum)), maximum_(std::max(minimum, maximum)), on_change_(std::move(on_change))
+zgui.hh:777: set_title(std::move(title))
+zgui.hh:781: Slider(std::string title, T& value, T minimum, T maximum, std::function<void()> on_change =
+zgui.hh:783: : Slider(std::move(title), &value, minimum, maximum, std::move(on_change))
+zgui.hh:786: Slider(std::string title, const Bound<T>& value, T minimum, T maximum, std::function<void()> on_change =
+zgui.hh:788: : Slider(std::move(title), value.get(), minimum, maximum, std::move(on_change))
+zgui.hh:793: T get_value() const
+zgui.hh:798: void set_value(T value)
+zgui.hh:804: on_change_()
+zgui.hh:808: void set_on_change(std::function<void()> on_change)
+zgui.hh:813: void draw() override
+zgui.hh:821: graphics.fit_text(title_, std::max(0.f, size.x - value_width - 4.f))
+zgui.hh:823: graphics.fit_text(value_text, std::max(0.f, size.x - 4.f))
+zgui.hh:824: graphics.draw_text(title, Point(absolute.x, absolute.y), theme.text_primary)
+zgui.hh:825: graphics.draw_text( fitted_value, Point(absolute.x + size.x - graphics.measure_text_width(fitted_value), absolute.y), theme.text_dim)
+zgui.hh:831: graphics.fill_rect(Point(absolute.x, track_y), Point(size.x, spacing::kSliderTrackHeight), theme.border_outer)
+zgui.hh:833: graphics.fill_rect(Point(absolute.x + spacing::kSliderTrackInset, track_y + spacing::kSliderTrackInset), Point(std::max(0.f, size.x - 2.f * spacing::kSliderTrackInset), spacing::kSliderInnerTrackHeight), theme.control_bg)
+zgui.hh:845: absolute.x + std::max(0.f, size.x - spacing::kSliderThumbWidth) * ratio
+zgui.hh:846: graphics.draw_frame(Point(thumb_x, track_y - spacing::kSliderThumbVerticalOffset), Point(spacing::kSliderThumbWidth, spacing::kSliderThumbHeight), dragging_ ? theme.control_hover : theme.text_dim)
+zgui.hh:852: void update() override
+zgui.hh:859: update_from_mouse()
+zgui.hh:863: bool handle_mouse_press(Point position) override
+zgui.hh:867: update_from_mouse()
+zgui.hh:872: namespace detail {
+zgui.hh:873: struct ComboBoxData;
+zgui.hh:877: class ComboBox : public UIElement {
+zgui.hh:888: void set_items(std::vector<std::string> items)
+zgui.hh:895: bind_selected_index(&index, notify)
+zgui.hh:900: std::size_t get_selected_index() const
+zgui.hh:902: const std::string& get_selected_item() const
+zgui.hh:904: void set_on_change(std::function<void(std::size_t)> on_change)
+zgui.hh:906: void draw() override
+zgui.hh:908: bool handle_mouse_press(Point position) override
+zgui.hh:911: namespace detail {
+zgui.hh:912: struct MultiComboBoxData;
+zgui.hh:916: class MultiComboBox : public UIElement {
+zgui.hh:924: MultiComboBox(std::vector<std::string> items, std::vector<bool>* values, std::function<void()> on_change =
+zgui.hh:927: MultiComboBox(std::vector<std::string> items, std::vector<bool>& values, std::function<void()> on_change =
+zgui.hh:929: : MultiComboBox(std::move(items), &values, std::move(on_change))
+zgui.hh:931: MultiComboBox(std::vector<std::string> items, const Bound<std::vector<bool>>& values, std::function<void()> on_change =
+zgui.hh:935: void set_items(std::vector<std::string> items)
+zgui.hh:937: const std::vector<bool>& values() const
+zgui.hh:939: void set_on_change(std::function<void()> on_change)
+zgui.hh:941: void draw() override
+zgui.hh:943: bool handle_mouse_press(Point position) override
+zgui.hh:947: class TextInput : public UIElement {
+zgui.hh:952: std::function<void()> on_change_
+zgui.hh:963: ~TextInput() override
+zgui.hh:966: void set_on_change(std::function<void()> on_change)
+zgui.hh:968: void set_value(std::string* value)
+zgui.hh:970: void draw() override
+zgui.hh:972: void update() override
+zgui.hh:974: bool handle_mouse_press(Point position) override
+zgui.hh:978: class KeyBind : public UIElement {
+zgui.hh:983: std::function<void()> on_change_
+zgui.hh:991: : KeyBind(std::move(title), &key, std::move(on_change))
+zgui.hh:996: void set_key(int key)
+zgui.hh:998: int get_key() const
+zgui.hh:1000: void set_on_change(std::function<void()> on_change)
+zgui.hh:1002: void draw() override
+zgui.hh:1004: void update() override
+zgui.hh:1006: bool handle_mouse_press(Point position) override
+zgui.hh:1010: class ColorPicker : public UIElement {
+zgui.hh:1012: enum class DragTarget { none, saturation_value, hue, alpha };
+zgui.hh:1017: std::function<void()> on_change_
+zgui.hh:1024: void update_from_mouse(Point position)
+zgui.hh:1025: void apply_color()
+zgui.hh:1032: : ColorPicker(&value, std::move(on_change))
+zgui.hh:1037: void draw() override
+zgui.hh:1039: void update() override
+zgui.hh:1041: bool handle_mouse_press(Point position) override
+zgui.hh:1045: class ColorSwatch : public UIElement {
+zgui.hh:1050: std::function<void()> on_change_
+zgui.hh:1059: : ColorSwatch(std::move(label), &value, std::move(on_change))
+zgui.hh:1061: ColorSwatch(std::string label, const Bound<Color>& value, std::function<void()> on_change =
+zgui.hh:1067: : ColorSwatch(&value, std::move(on_change))
+zgui.hh:1072: void set_on_change(std::function<void()> on_change)
+zgui.hh:1074: void set_vertical_layout(bool vertical)
+zgui.hh:1076: bool handle_mouse_press(Point position) override
+zgui.hh:1078: void draw() override
+zgui.hh:1082: class ColorButton : public UIElement {
+zgui.hh:1087: std::function<void()> on_change_
+zgui.hh:1096: : ColorButton(std::move(label), &value, std::move(on_change))
+zgui.hh:1098: ColorButton(std::string label, const Bound<Color>& value, std::function<void()> on_change =
+zgui.hh:1102: bool handle_mouse_press(Point position) override
+zgui.hh:1104: void update() override
+zgui.hh:1106: void draw() override
+zgui.hh:1110: class TabBar : public UIElement {
+zgui.hh:1114: struct TabLayout {
+zgui.hh:1120: struct Tab {
+zgui.hh:1130: void layout_tabs()
+zgui.hh:1131: TabLayout measure_tab_layout(float available_width) const
+zgui.hh:1138: std::shared_ptr<UIElement> add_tab(std::string title)
+zgui.hh:1140: void set_size(const Point& size) override
+zgui.hh:1142: bool set_active_tab(std::size_t index)
+zgui.hh:1144: std::size_t get_active_tab() const
+zgui.hh:1146: std::size_t tab_count() const
+zgui.hh:1148: const std::string& tab_title(std::size_t index) const
+zgui.hh:1150: std::size_t tab_widget_count(std::size_t index) const
+zgui.hh:1152: std::size_t tab_visible_widget_count(std::size_t index) const
+zgui.hh:1154: std::size_t widget_count() const override
+zgui.hh:1156: std::size_t visible_widget_count() const override
+zgui.hh:1159: void draw() override
+zgui.hh:1161: void update() override
+zgui.hh:1163: bool handle_mouse_press(Point position) override
+zgui.hh:1165: bool handles_mouse_wheel(Point position) const override
+zgui.hh:1167: Rect child_clip_rect() const override
+zgui.hh:1169: Point child_offset() const override
+zgui.hh:1171: float content_bottom() const override
+zgui.hh:1173: float content_right() const override
+zgui.hh:1177: class SubTabBar : public TabBar {
+zgui.hh:1184: class ScrollArea : public UIElement {
+zgui.hh:1186: static constexpr float scrollbar_width_ = 10.f
+zgui.hh:1193: void scrollbar_visibility(bool& vertical, bool& horizontal) const
+zgui.hh:1194: Point viewport_size() const
+zgui.hh:1195: float maximum_vertical_scroll() const
+zgui.hh:1196: float maximum_horizontal_scroll() const
+zgui.hh:1197: Rect vertical_scrollbar_track() const
+zgui.hh:1198: Rect horizontal_scrollbar_track() const
+zgui.hh:1199: float vertical_thumb_size() const
+zgui.hh:1200: float horizontal_thumb_size() const
+zgui.hh:1201: void scroll_vertical_to(float mouse_y)
+zgui.hh:1202: void scroll_horizontal_to(float mouse_x)
+zgui.hh:1206: void set_horizontal_scrolling(bool enabled)
+zgui.hh:1208: bool horizontal_scrolling() const
+zgui.hh:1210: void set_scroll_offset(Point offset)
+zgui.hh:1212: Point scroll_offset() const
+zgui.hh:1214: void set_size(const Point& size) override
+zgui.hh:1217: void draw() override
+zgui.hh:1219: void update() override
+zgui.hh:1221: bool handle_mouse_press(Point position) override
+zgui.hh:1223: bool handles_mouse_wheel(Point position) const override
+zgui.hh:1225: Rect child_clip_rect() const override
+zgui.hh:1227: Point child_offset() const override
+zgui.hh:1231: class GroupBox : public UIElement {
+zgui.hh:1238: void layout_sub_tabs()
+zgui.hh:1246: void set_sub_tabs(const std::shared_ptr<SubTabBar>& tabs)
+zgui.hh:1248: std::shared_ptr<SubTabBar> get_sub_tabs() const
+zgui.hh:1250: void set_fit_content(bool fit_content)
+zgui.hh:1254: void set_size(const Point& size) override
+zgui.hh:1257: void draw() override
+zgui.hh:1259: void update() override
+zgui.hh:1261: bool handle_mouse_press(Point position) override
+zgui.hh:1263: bool handles_mouse_wheel(Point position) const override
+zgui.hh:1265: Rect child_clip_rect() const override
+zgui.hh:1267: float content_right() const override
+zgui.hh:1269: std::size_t widget_count() const override
+zgui.hh:1271: std::size_t visible_widget_count() const override
+zgui.hh:1275: class StackLayout {
+zgui.hh:1301: float cursor_y() const
+zgui.hh:1305: void add_row(const std::shared_ptr<UIElement>& element, float height = spacing::kDefaultRowHeight)
+zgui.hh:1308: void add_two_column_row(const std::shared_ptr<CheckBox>& check_box, const std::shared_ptr<ComboBox>& combo_box, float left_fraction = 0.48f, float height = spacing::kDefaultRowHeight)
+zgui.hh:1313: void add_three_column_row(const std::shared_ptr<ColorButton>& first, const std::shared_ptr<ColorButton>& second, const std::shared_ptr<ColorButton>& third, float height = spacing::kColorButtonRowHeight)
+zgui.hh:1320: class TableView : public UIElement {
+zgui.hh:1323: struct Column {
+zgui.hh:1331: struct Cell {
+zgui.hh:1344: std::function<void(std::size_t)> on_selection_changed_
+zgui.hh:1354: float content_height() const
+zgui.hh:1355: float maximum_scroll() const
+zgui.hh:1356: void scroll_to_mouse(float mouse_y)
+zgui.hh:1357: std::vector<float> effective_column_widths(float available_width) const
+zgui.hh:1361: void set_columns(std::vector<Column> columns)
+zgui.hh:1363: void set_size(const Point& size) override
+zgui.hh:1365: void set_zebra_stripes(bool enabled)
+zgui.hh:1367: void add_row(Row row)
+zgui.hh:1369: void add_row(Row row, Color background)
+zgui.hh:1371: void add_row(const std::vector<std::string>& cells)
+zgui.hh:1373: bool set_cell(std::size_t row, std::size_t column, Cell cell)
+zgui.hh:1375: void set_column_visible(std::size_t index, bool visible)
+zgui.hh:1377: void set_on_selection_changed(std::function<void(std::size_t)> callback)
+zgui.hh:1379: void clear_rows()
+zgui.hh:1381: bool select_row(std::size_t index)
+zgui.hh:1383: std::optional<std::size_t> selected_row() const
+zgui.hh:1385: std::size_t row_count() const
+zgui.hh:1387: void set_row_height(float height)
+zgui.hh:1390: void draw() override
+zgui.hh:1392: void update() override
+zgui.hh:1394: bool handle_mouse_press(Point position) override
+zgui.hh:1396: bool handles_mouse_wheel(Point position) const override
+zgui.hh:1398: std::size_t widget_count() const override
+zgui.hh:1400: std::size_t visible_widget_count() const override
+zgui.hh:1407: class Viewport : public UIElement {
+zgui.hh:1409: std::function<void(int, int, int, int)> on_render_
+zgui.hh:1410: std::function<void(const ViewportInput&)> on_input_
+zgui.hh:1415: void set_on_render(std::function<void(int, int, int, int)> on_render)
+zgui.hh:1417: void set_on_input(std::function<void(const ViewportInput&)> on_input)
+zgui.hh:1419: void draw() override
+zgui.hh:1421: void update() override
+zgui.hh:1423: bool handle_mouse_press(Point position) override
+zgui.hh:1425: Rect child_clip_rect() const override
+zgui.hh:1429: class Window : public UIElement {
+zgui.hh:1451: explicit Window(std::string title)
+zgui.hh:1454: void set_minimum_size(float width, float height)
+zgui.hh:1456: void set_minimum_size_from_content()
+zgui.hh:1458: Point get_minimum_size() const
+zgui.hh:1460: void set_resizable(bool resizable)
+zgui.hh:1462: bool is_resizable() const
+zgui.hh:1464: void set_frameless(bool frameless)
+zgui.hh:1466: void set_title_bar_visible(bool visible)
+zgui.hh:1468: void set_always_on_top(bool always_on_top)
+zgui.hh:1470: bool is_always_on_top() const
+zgui.hh:1472: void set_visible(bool visible)
+zgui.hh:1474: bool is_visible() const
+zgui.hh:1476: void set_size(const Point& size) override
+zgui.hh:1478: void set_status_bar_visible(bool visible)
+zgui.hh:1480: void set_status_checkbox(std::string label, bool* value)
+zgui.hh:1482: void set_status_checkbox(std::string label, bool& value)
+zgui.hh:1483: set_status_checkbox(std::move(label), &value)
+zgui.hh:1486: void set_status_checkbox(std::string label, const Bound<bool>& value)
+zgui.hh:1488: void set_status_indicators(std::vector<Color> indicators)
+zgui.hh:1490: bool handle_mouse_press(Point position) override
+zgui.hh:1492: void draw() override
+zgui.hh:1494: void update() override
+zgui.hh:1496: Rect child_clip_rect() const override
+zgui.hh:1500: class WindowManager {
+zgui.hh:1512: ~WindowManager()
+zgui.hh:1519: void add_window(const std::shared_ptr<Window>& window)
+zgui.hh:1521: void remove_window(const std::shared_ptr<Window>& window)
+zgui.hh:1523: void bring_to_front(const std::shared_ptr<Window>& window)
+zgui.hh:1525: const std::vector<std::shared_ptr<Window>>& windows() const
+zgui.hh:1527: void show_overlay(const std::shared_ptr<UIElement>& overlay)
+zgui.hh:1529: void dismiss_overlay(const UIElement* overlay)
+zgui.hh:1531: bool show_tooltip(const UIElement* owner, const std::shared_ptr<UIElement>& tooltip)
+zgui.hh:1533: void dismiss_tooltip(const UIElement* owner)
+zgui.hh:1535: bool has_tooltip(const UIElement* owner) const
+zgui.hh:1537: bool has_overlays() const
+zgui.hh:1544: void draw()
+zgui.hh:1546: void update()
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:18: namespace zgui::sdl2_opengl {
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:21: class OpenGLGraphics : public Graphics {
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:23: struct Batch {
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:40: void initialize_font()
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:41: void flush_geometry()
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:42: void set_topology(VertexTopology topology) override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:43: void append_geometry(const std::vector<Vertex>& vertices, std::size_t count) override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:49: void begin_frame(int viewport_width, int viewport_height)
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:51: void end_frame()
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:53: void release_font_texture()
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:55: void release_resources()
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:59: Point viewport_size() const override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:61: void draw() override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:62: void reset() override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:63: void set_clip_rect(int x, int y, int w, int h) override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:64: void reset_clip_rect() override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:65: void draw_text(const std::string& text, Point position, Color color) override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:66: float measure_text_width(const std::string& text) const override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:70: class SDL2Input : public Input {
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:88: SDL2Input()
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:91: void begin_frame()
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:93: void process_event(const SDL_Event& event)
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:94: bool key_pressed(int key) const override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:95: bool mouse_over(Point position, Point size) const override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:96: Point mouse_position() const override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:97: bool mouse_button_pressed() const override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:98: bool mouse_button_down(MouseButton button) const override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:99: Point mouse_delta() const override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:100: bool mouse_double_clicked() const override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:101: bool escape_pressed() const override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:102: int mouse_wheel_delta() const override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:103: bool pop_text_input(char& character) override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:104: std::optional<int> poll_pressed_key() override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:105: std::string key_name(int key) const override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:106: bool text_cursor_left_pressed() const override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:107: bool text_cursor_right_pressed() const override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:108: bool text_cursor_home_pressed() const override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:109: bool text_cursor_end_pressed() const override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:110: bool text_delete_pressed() const override
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:117: std::function<void(WindowManager&, OpenGLGraphics&, SDL2Input&, std::size_t)>
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:119: int run_sdl2_opengl_application(const std::string& title, int width, int height, const ApplicationSetup& setup)
+backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh:122: int run_sdl2_opengl_application(const std::string& title, int width, int height, const ApplicationSetup& setup, std::size_t frame_limit, const ApplicationFrame& on_frame =

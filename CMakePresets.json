@@ -1,0 +1,68 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "debug",
+      "displayName": "Debug",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "ZGUI_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/build/release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "ZGUI_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "asan-ubsan",
+      "displayName": "Address and undefined behavior sanitizers",
+      "inherits": "debug",
+      "binaryDir": "${sourceDir}/build/asan-ubsan",
+      "cacheVariables": {
+        "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+        "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined"
+      }
+    },
+    {
+      "name": "coverage",
+      "displayName": "Coverage",
+      "inherits": "debug",
+      "binaryDir": "${sourceDir}/build/coverage",
+      "cacheVariables": {
+        "CMAKE_CXX_FLAGS": "--coverage",
+        "CMAKE_EXE_LINKER_FLAGS": "--coverage"
+      }
+    },
+    {
+      "name": "no-exceptions",
+      "displayName": "No exceptions",
+      "inherits": "release",
+      "binaryDir": "${sourceDir}/build/no-exceptions",
+      "cacheVariables": {
+        "ZGUI_NO_EXCEPTIONS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {"name": "debug", "configurePreset": "debug"},
+    {"name": "release", "configurePreset": "release"},
+    {"name": "asan-ubsan", "configurePreset": "asan-ubsan"},
+    {"name": "coverage", "configurePreset": "coverage"},
+    {"name": "no-exceptions", "configurePreset": "no-exceptions"}
+  ],
+  "testPresets": [
+    {"name": "debug", "configurePreset": "debug", "output": {"outputOnFailure": true}},
+    {"name": "release", "configurePreset": "release", "output": {"outputOnFailure": true}},
+    {"name": "asan-ubsan", "configurePreset": "asan-ubsan", "output": {"outputOnFailure": true}},
+    {"name": "coverage", "configurePreset": "coverage", "output": {"outputOnFailure": true}},
+    {"name": "no-exceptions", "configurePreset": "no-exceptions", "output": {"outputOnFailure": true}}
+  ]
+}

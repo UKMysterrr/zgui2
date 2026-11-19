@@ -1,14 +1,14 @@
-# top-most EditorConfig file
 root = true
 
-# Unix-style newlines with a newline ending every file
 [*]
 charset = utf-8
-trim_trailing_whitespace = true
 end_of_line = lf
-indent_style = space
-indent_size = 2
+insert_final_newline = true
 
-[*.{c, h, cc, hh, cpp, hpp}]
-indent_size = 2
-continuation_indent_size = 4
+[*.{cc,hh}]
+indent_style = space
+indent_size = 4
+
+[*.py]
+indent_style = space
+indent_size = 4

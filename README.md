@@ -9,8 +9,7 @@ zgui is a retained-mode, dependency-free C++17 GUI toolkit. The core in
 applications provide graphics and input implementations. An optional SDL2 /
 OpenGL 2.1 backend is included.
 
-The upstream license notice is in [LICENSE](LICENSE). The old v1 codebase
-remains available on the [`legacy` branch](https://github.com/UKMysterrr/zgui2/tree/legacy).
+The upstream license notice is in [LICENSE](LICENSE).
 
 ## Build and run
 

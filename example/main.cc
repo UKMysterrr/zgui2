@@ -341,7 +341,7 @@ namespace {
     }
 
     void build_ui(WindowManager& manager, State& state) {
-        auto window = std::make_shared<Window>("zgui 2.0 — Controls");
+        auto window = std::make_shared<Window>("zgui 2.1 — Controls");
         window->set_position({16.f, 16.f});
         window->set_minimum_size(504.f, 540.f);
         window->set_size({504.f, 540.f});

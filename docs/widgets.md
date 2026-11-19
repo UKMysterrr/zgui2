@@ -323,7 +323,9 @@ void add_rows(zgui::UIElement& parent) {
 ## TableView and ListView
 
 `TableView` accepts `Column` definitions, string rows or `Row` cells, optional
-cell/row colors, and selection callbacks. Invalid `set_cell()` and selection
+cell/row colors, and selection callbacks. Clicking a selected row deselects it;
+the callback receives `TableView::no_selection`. `clear_selection()` also
+notifies when the selection changes. Invalid `set_cell()` and selection
 indices return false; clearing rows clears selection. Only visible rows are
 drawn, column widths can be weighted or resized, and hidden columns are omitted.
 `ListView` is a compatibility alias.
@@ -333,7 +335,11 @@ void add_table(zgui::UIElement& parent) {
     auto table = std::make_shared<zgui::TableView>();
     table->set_columns({{"Name", 120.f}, {"State", 80.f}});
     table->add_row(std::vector<std::string>{"Alpha", "Ready"});
-    table->set_on_selection_changed([](std::size_t) {});
+    table->set_on_selection_changed([](std::size_t row) {
+        if (row == zgui::TableView::no_selection) {
+            // No row is selected.
+        }
+    });
     parent.add_child(table);
 }
 ```

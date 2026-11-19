@@ -1508,6 +1508,10 @@ int zgui::KeyBind::get_key() const {
     return *key_;
 }
 
+void zgui::KeyBind::cancel_capture() {
+    listening_ = false;
+}
+
 void zgui::KeyBind::set_on_change(std::function<void()> on_change) {
     on_change_ = std::move(on_change);
 }
@@ -2020,6 +2024,14 @@ bool zgui::TableView::select_row(std::size_t index) {
     return true;
 }
 
+void zgui::TableView::clear_selection() {
+    if (!selected_row_)
+        return;
+    selected_row_.reset();
+    if (on_selection_changed_)
+        on_selection_changed_(no_selection);
+}
+
 bool zgui::TableView::set_cell(std::size_t row, std::size_t column, Cell cell) {
     if (row >= rows_.size() || column >= columns_.size())
         return false;
@@ -2223,8 +2235,12 @@ bool zgui::TableView::handle_mouse_press(zgui::Point position) {
     const float row_position = position.y - (absolute.y + 22.f) + scroll_offset_;
     if (row_position >= 0.f) {
         const auto row = static_cast<std::size_t>(row_position / row_height_);
-        if (row < rows_.size())
-            select_row(row);
+        if (row < rows_.size()) {
+            if (selected_row_ == row)
+                clear_selection();
+            else
+                select_row(row);
+        }
     }
     return true;
 }

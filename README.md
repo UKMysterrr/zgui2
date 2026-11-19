@@ -14,22 +14,28 @@ The core requires CMake 3.14+ and a C++17 compiler. The example also needs SDL2
 and OpenGL development packages. To build the core alone:
 
 ```sh
-cmake -S . -B build/core -DZGUI_BUILD_BACKEND_SDL2_OPENGL=OFF
-cmake --build build/core
+cmake -S . -B build -DZGUI_BUILD_BACKEND_SDL2_OPENGL=OFF
+cmake --build build
 ```
 
 To build the backend and the two-window interactive example:
 
 ```sh
-cmake -S . -B build/example -DZGUI_BUILD_EXAMPLES=ON
-cmake --build build/example
-build/example/example/zgui_example
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DZGUI_BUILD_BACKEND_SDL2_OPENGL=ON \
+  -DZGUI_BUILD_EXAMPLES=ON
+cmake --build build
+build/example/zgui_example
 ```
 
 The primary window has Classic and Extended tabs. The inspector shows live
 values, a theme switcher, a selectable table with draggable column boundaries,
-and a canvas: drag to rotate, scroll to zoom, or
-double-click to reset. Drag either title bar to focus and move its window;
+and a perspective wireframe cube: drag to orbit, scroll to zoom, or double-click
+to reset the view. Amount changes idle rotation speed and guide-grid density.
+Enable both Show guides and the Guides layer to see the floor and XYZ axes;
+Wireframe and Bounding Box control the other canvas layers independently.
+The accent picker updates both windows and the cube, including across theme
+switches. Reset Defaults restores the controls, theme, selection, and view.
+Drag either title bar to focus and move its window;
 drag the bottom-right corner to resize. Click the color swatch's Pick button
 to open its HSV/alpha editor. The login form is a demonstration, not an
 authentication system: the password is only masked on screen.
@@ -38,12 +44,14 @@ For bounded smoke runs, use `zgui_example --frames 60 --theme dark` (or
 `--theme light`); the frame count must be positive. On a headless Linux host:
 
 ```sh
-xvfb-run -a build/example/example/zgui_example --frames 60
+xvfb-run -a build/example/zgui_example --frames 60
 ```
 
 The `debug`, `release`, `asan-ubsan`, `coverage`, and `no-exceptions`
 configure/build presets are also available. Set `ZGUI_WARNINGS_AS_ERRORS=ON`
 to enforce the project's warning flags.
+CI builds and smoke-tests the example on Linux and uploads the executable as
+`zgui_example-linux-x86_64`; it still requires SDL2 and OpenGL runtime libraries.
 
 ## Using zgui with FetchContent
 
@@ -68,7 +76,7 @@ For core-only use, set `ZGUI_BUILD_BACKEND_SDL2_OPENGL` to `OFF` and link
 when its SDL2 and OpenGL dependencies are found; requesting the example without
 them fails configuration.
 
-Alternatively, install with `cmake --install build/example --prefix /path/to/install`
+Alternatively, install with `cmake --install build --prefix /path/to/install`
 and use `find_package(zgui CONFIG REQUIRED COMPONENTS sdl2_opengl)` with
 `CMAKE_PREFIX_PATH` set to that prefix. Omit the component for core-only use.
 
@@ -78,7 +86,7 @@ See the [documentation](docs/README.md) for integration and widget details.
 
 zgui is derived from [zxvnme/zgui 2.0](https://github.com/zxvnme/zgui) and is
 licensed under the MIT License. The optional backend's embedded glyph atlas is
-derived from Liberation Sans; see [FONT_LICENSE.txt](backends/sdl2_opengl/FONT_LICENSE.txt).
+derived from Liberation Sans; see [FONT_LICENSE.txt](example/FONT_LICENSE.txt).
 Text input supports printable ASCII only; the renderer also recognizes an
 em dash, but otherwise falls back for non-ASCII bytes. The core has one active
 context and is single-threaded. The renderer uses the OpenGL 2.1 fixed-function

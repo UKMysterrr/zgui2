@@ -999,6 +999,8 @@ namespace zgui {
         void set_key(int key);
         /// Returns the stored key code.
         int get_key() const;
+        /// Cancels an in-progress key capture without changing the binding.
+        void cancel_capture();
         /// Replaces the callback invoked after a key is captured.
         void set_on_change(std::function<void()> on_change);
         /// Draws the title and backend key name.
@@ -1341,6 +1343,8 @@ namespace zgui {
         };
 
         using Row = std::vector<Cell>;
+        /// Selection callback value indicating that no row is selected.
+        static constexpr std::size_t no_selection = static_cast<std::size_t>(-1);
 
     private:
         std::vector<Column> columns_;
@@ -1379,12 +1383,14 @@ namespace zgui {
         bool set_cell(std::size_t row, std::size_t column, Cell cell);
         /// Hides or shows a column; invalid indices are ignored.
         void set_column_visible(std::size_t index, bool visible);
-        /// Sets the callback receiving newly selected row indices.
+        /// Sets the callback receiving selected indices or no_selection on deselection.
         void set_on_selection_changed(std::function<void(std::size_t)> callback);
         /// Removes all rows and clears selection.
         void clear_rows();
         /// Selects a row; returns false for an invalid index.
         bool select_row(std::size_t index);
+        /// Clears a selection and notifies the callback when it changes.
+        void clear_selection();
         /// Returns the selected row, or nullopt when there is no selection.
         std::optional<std::size_t> selected_row() const;
         /// Returns the number of rows.
@@ -1396,7 +1402,7 @@ namespace zgui {
         void draw() override;
         /// Updates scrolling and active column/scrollbar drags.
         void update() override;
-        /// Selects rows, resizes columns, or starts scrollbar interaction.
+        /// Toggles row selection, resizes columns, or starts scrollbar interaction.
         bool handle_mouse_press(Point position) override;
         /// Reports wheel ownership when the pointer is over the table.
         bool handles_mouse_wheel(Point position) const override;

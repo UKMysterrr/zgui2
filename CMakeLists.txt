@@ -66,11 +66,11 @@ if(ZGUI_BUILD_BACKEND_SDL2_OPENGL)
         endif()
     endif()
     if(_zgui_sdl2_target AND OpenGL_FOUND)
-        add_library(zgui_sdl2_opengl backends/sdl2_opengl/zgui_impl_sdl2_opengl.cc)
+        add_library(zgui_sdl2_opengl example/zgui_impl_sdl2_opengl.cc)
         add_library(zgui::sdl2_opengl ALIAS zgui_sdl2_opengl)
         set_target_properties(zgui_sdl2_opengl PROPERTIES EXPORT_NAME sdl2_opengl)
         target_include_directories(zgui_sdl2_opengl PUBLIC
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/backends/sdl2_opengl>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/example>
             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
         target_link_libraries(zgui_sdl2_opengl PUBLIC zgui::zgui ${_zgui_sdl2_target} OpenGL::GL)
         target_compile_features(zgui_sdl2_opengl PUBLIC cxx_std_17)
@@ -95,7 +95,7 @@ if(ZGUI_INSTALL)
             ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
             LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
             RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
-        install(FILES backends/sdl2_opengl/zgui_impl_sdl2_opengl.hh
+        install(FILES example/zgui_impl_sdl2_opengl.hh
             DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
         install(EXPORT zguiBackendTargets FILE zguiBackendTargets.cmake NAMESPACE zgui::
             DESTINATION "${zgui_INSTALL_CMAKEDIR}")

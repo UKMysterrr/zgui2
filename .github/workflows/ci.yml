@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev libgl1-mesa-dev xvfb xauth
+      - name: Configure and build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=17 \
+            -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF \
+            -DZGUI_BUILD_EXAMPLES=ON -DZGUI_WARNINGS_AS_ERRORS=ON
+          cmake --build build --parallel
+      - name: Smoke test
+        env:
+          MESA_SHADER_CACHE_DISABLE: "true"
+        run: xvfb-run -a ./build/example/zgui_example --frames 60
+      - name: Upload Linux executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: zgui_example-linux-x86_64
+          path: build/example/zgui_example
+          if-no-files-found: error

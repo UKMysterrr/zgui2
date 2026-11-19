@@ -5,7 +5,9 @@
 #include "zgui_impl_sdl2_opengl.hh"
 
 #include <algorithm>
+#include <array>
 #include <charconv>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <iostream>
@@ -22,37 +24,63 @@ namespace {
         bool pinned = false;
         bool guides = false;
         std::size_t mode = 0;
-        std::vector<bool> options{true, false, false};
+        std::vector<bool> options{true, true, false};
         int key = SDLK_LALT;
         std::string username;
         std::string password;
         std::size_t quality = 1;
         std::size_t theme = 0;
-        Color color{105, 85, 235};
         float progress = 0.25f;
-        float angle = 0.f;
+        float yaw = 0.45f;
+        float pitch = -0.35f;
+        std::chrono::steady_clock::time_point last_frame = std::chrono::steady_clock::now();
         std::string selection = "None";
         std::shared_ptr<Window> inspector;
+        std::shared_ptr<KeyBind> key_bind;
         std::shared_ptr<TableView> table;
         std::shared_ptr<Label> detail;
     };
 
-    Theme make_theme(std::size_t index) {
+    Theme make_theme(std::size_t index, Color accent) {
         Theme theme = core::default_theme;
-        theme.accent = {105, 85, 235};
+        theme.accent = accent;
         if (index == 1) {
             theme.window_bg = {238, 240, 244};
             theme.window_header = {220, 224, 230};
             theme.groupbox_bg = {246, 247, 249};
             theme.border_outer = {95, 100, 108};
             theme.border_inner = {180, 184, 190};
-            theme.accent = {68, 80, 190};
             theme.text_primary = {25, 28, 32};
             theme.text_dim = {90, 96, 104};
             theme.control_bg = {230, 233, 238};
             theme.control_hover = {210, 216, 224};
         }
         return theme;
+    }
+
+    void reset_defaults(State& state) {
+        const State defaults;
+        state.amount = defaults.amount;
+        state.scale = defaults.scale;
+        state.enabled = defaults.enabled;
+        state.pinned = defaults.pinned;
+        state.guides = defaults.guides;
+        state.mode = defaults.mode;
+        state.options = defaults.options;
+        state.key = defaults.key;
+        state.key_bind->cancel_capture();
+        state.username = defaults.username;
+        state.password = defaults.password;
+        state.quality = defaults.quality;
+        state.theme = defaults.theme;
+        state.progress = defaults.progress;
+        state.yaw = defaults.yaw;
+        state.pitch = defaults.pitch;
+        state.last_frame = std::chrono::steady_clock::now();
+        state.selection = defaults.selection;
+        state.inspector->set_always_on_top(false);
+        state.table->clear_selection();
+        core::set_theme(make_theme(state.theme, {105, 85, 235}));
     }
 
     template <typename T>
@@ -117,10 +145,11 @@ namespace {
               {205.f, 18.f});
         add_slider(*left, "Amount", state.amount, 0, 100, 1, 76.f);
         add_slider(*left, "Canvas scale", state.scale, 0.5f, 2.f, 0.1f, 123.f);
-        place(*left, std::make_shared<Button>("Reset", [&state] {
+        place(*left, std::make_shared<Button>("Reset view", [&state] {
                   state.amount = 25;
                   state.scale = 1.f;
-                  state.angle = 0.f;
+                  state.yaw = 0.45f;
+                  state.pitch = -0.35f;
               }),
               {10.f, 174.f}, {95.f, 24.f});
         place(*left, std::make_shared<ToggleButton>("Pin inspector", state.pinned, [&state] {
@@ -136,10 +165,11 @@ namespace {
         place(*left, std::make_shared<Label>("Visible layers"), {10.f, 272.f}, {200.f, 16.f});
         place(*left,
               std::make_shared<MultiComboBox>(
-                  std::vector<std::string>{"Grid", "Guides", "Labels"}, state.options),
+                  std::vector<std::string>{"Wireframe", "Guides", "Bounding Box"}, state.options),
               {10.f, 290.f}, {210.f, 22.f});
         place(*left, std::make_shared<Label>("Shortcut"), {10.f, 327.f}, {200.f, 16.f});
-        place(*left, std::make_shared<KeyBind>("", state.key), {10.f, 345.f}, {210.f, 22.f});
+        state.key_bind =
+            place(*left, std::make_shared<KeyBind>("", state.key), {10.f, 345.f}, {210.f, 22.f});
 
         auto right = place(page, std::make_shared<GroupBox>("Default title"), {248.f, 8.f},
                            {232.f, 466.f});
@@ -167,10 +197,6 @@ namespace {
                   }, [&state, item] { return state.selection == item; }),
                   {8.f, 5.f + static_cast<float>(i) * 22.f}, {175.f, 18.f});
         }
-        place(*right, std::make_shared<ClickableLabel>("Reset selection", [&state] {
-                  state.selection = "None";
-              }),
-              {10.f, 350.f}, {200.f, 18.f});
         place(*right, std::make_shared<Label>("Selection appears in the inspector."), {10.f, 379.f},
               {210.f, 18.f});
     }
@@ -179,9 +205,9 @@ namespace {
         auto group = place(page, std::make_shared<GroupBox>("Live canvas"), {8.f, 8.f},
                            {472.f, 330.f});
         group->set_fit_content(false);
-        place(*group, std::make_shared<Label>("Choose a color for the inspector canvas."),
+        place(*group, std::make_shared<Label>("Choose the menu and cube accent color."),
               {12.f, 25.f}, {440.f, 18.f});
-        place(*group, std::make_shared<ColorSwatch>("Color", state.color), {12.f, 50.f},
+        place(*group, std::make_shared<ColorSwatch>("Accent", core::active_theme.accent), {12.f, 50.f},
               {250.f, 24.f});
         place(*group, std::make_shared<Label>("Pick opens an HSV / alpha editor."), {12.f, 82.f},
               {400.f, 18.f});
@@ -209,8 +235,14 @@ namespace {
         place(*window,
               std::make_shared<RadioGroup>(
                   std::vector<std::string>{"Dark", "Light"}, state.theme,
-                  [&state](std::size_t) { core::set_theme(make_theme(state.theme)); }),
+                  [&state](std::size_t) {
+                      core::set_theme(make_theme(state.theme, core::active_theme.accent));
+                  }),
               {90.f, 28.f}, {100.f, 36.f});
+        place(*window, std::make_shared<Button>("Reset Defaults", [&state] {
+                  reset_defaults(state);
+              }),
+              {280.f, 32.f}, {150.f, 24.f})->set_anchors(false, true, true, false);
         place(*window, std::make_shared<Label>("Drag column edges; click a row."), {12.f, 72.f},
               {400.f, 18.f});
         state.table = place(*window, std::make_shared<TableView>(), {12.f, 94.f}, {426.f, 170.f});
@@ -223,7 +255,9 @@ namespace {
         state.detail = place(*window, std::make_shared<Label>("Select a row to inspect it."),
                              {12.f, 272.f}, {400.f, 18.f});
         state.table->set_on_selection_changed([&state](std::size_t row) {
-            state.detail->set_text("Selected row " + std::to_string(row + 1));
+            state.detail->set_text(row == TableView::no_selection
+                                       ? "Select a row to inspect it."
+                                       : "Selected row " + std::to_string(row + 1));
         });
         place(*window, std::make_shared<Label>("Live view: drag to rotate; scroll to zoom."),
               {12.f, 300.f}, {410.f, 18.f});
@@ -231,11 +265,14 @@ namespace {
         viewport->set_anchors(true, true, true, true);
         viewport->set_on_input([&state](const ViewportInput& input) {
             if (input.double_clicked) {
-                state.angle = 0.f;
+                state.yaw = 0.45f;
+                state.pitch = -0.35f;
                 state.scale = 1.f;
             } else {
-                if (input.rotating)
-                    state.angle += input.mouse_delta.x * 0.01f;
+                if (input.rotating) {
+                    state.yaw += input.mouse_delta.x * 0.01f;
+                    state.pitch = std::clamp(state.pitch + input.mouse_delta.y * 0.01f, -1.3f, 1.3f);
+                }
                 state.scale = std::clamp(state.scale + static_cast<float>(input.wheel_delta) * 0.05f,
                                          0.5f, 2.f);
             }
@@ -244,43 +281,57 @@ namespace {
             auto& graphics = *core::graphics;
             if (!state.enabled)
                 return;
+            struct Vec3 { float x, y, z; };
             const float cx = static_cast<float>(x) + static_cast<float>(width) / 2.f;
             const float cy = static_cast<float>(y) + static_cast<float>(height) / 2.f;
-            const float size = 40.f * state.scale;
-            if (state.options[0]) {
-                for (int offset = -2; offset <= 2; ++offset) {
-                    const float step = static_cast<float>(offset) * 40.f;
-                    graphics.draw_line({static_cast<float>(x), cy + step},
-                                       {static_cast<float>(x + width), cy + step},
-                                       core::active_theme.border_inner);
-                    graphics.draw_line({cx + step, static_cast<float>(y)},
-                                       {cx + step, static_cast<float>(y + height)},
-                                       core::active_theme.border_inner);
-                }
-            }
-            if (state.guides || state.options[1]) {
-                graphics.draw_line({cx - 80.f, cy}, {cx + 80.f, cy}, core::active_theme.text_dim);
-                graphics.draw_line({cx, cy - 80.f}, {cx, cy + 80.f}, core::active_theme.text_dim);
-            }
-            if (state.options[2])
-                graphics.draw_text("Live canvas", {static_cast<float>(x) + 8.f,
-                                                   static_cast<float>(y) + 8.f},
-                                   core::active_theme.text_primary);
-            const float c = std::cos(state.angle);
-            const float s = std::sin(state.angle);
-            const auto point = [cx, cy, c, s, size](float px, float py) {
-                return Point(cx + (px * c - py * s) * size, cy + (px * s + py * c) * size);
+            const float focal = static_cast<float>(std::min(width, height)) * 1.6f * state.scale;
+            const float yaw_cos = std::cos(state.yaw), yaw_sin = std::sin(state.yaw);
+            const float pitch_cos = std::cos(state.pitch), pitch_sin = std::sin(state.pitch);
+            const auto project = [&](Vec3 point) {
+                const float rotated_x = yaw_cos * point.x + yaw_sin * point.z;
+                const float rotated_z = -yaw_sin * point.x + yaw_cos * point.z;
+                const float rotated_y = pitch_cos * point.y - pitch_sin * rotated_z;
+                const float depth = 6.f + pitch_sin * point.y + pitch_cos * rotated_z;
+                return Point(cx + focal * rotated_x / depth, cy - focal * rotated_y / depth);
             };
-            const Point a = point(-1.f, -1.f), b = point(1.f, -1.f);
-            const Point d = point(-1.f, 1.f), e = point(1.f, 1.f);
-            graphics.draw_line(a, b, state.color);
-            graphics.draw_line(b, e, state.color);
-            graphics.draw_line(e, d, state.color);
-            graphics.draw_line(d, a, state.color);
-            if (state.quality > 0)
-                graphics.draw_line(a, e, state.color);
-            if (state.quality > 1)
-                graphics.draw_line(b, d, state.color);
+            const auto line = [&](Vec3 a, Vec3 b, Color color) {
+                graphics.draw_line(project(a), project(b), color);
+            };
+            if (state.guides && state.options[1]) {
+                const int subdivisions =
+                    2 + state.amount * static_cast<int>(state.quality + 1) / 20;
+                for (int i = 0; i <= subdivisions; ++i) {
+                    const float offset = -2.f + 4.f * static_cast<float>(i) /
+                                                    static_cast<float>(subdivisions);
+                    line({offset, -1.25f, -2.f}, {offset, -1.25f, 2.f},
+                         core::active_theme.border_inner);
+                    line({-2.f, -1.25f, offset}, {2.f, -1.25f, offset},
+                         core::active_theme.border_inner);
+                }
+                const Vec3 origin{0.f, -1.25f, 0.f};
+                line(origin, {2.f, -1.25f, 0.f}, {225, 75, 75});
+                line(origin, {0.f, 1.25f, 0.f}, {75, 190, 100});
+                line(origin, {0.f, -1.25f, 2.f}, {90, 145, 240});
+            }
+            const std::array<Vec3, 8> vertices{{
+                {-1.f, -1.f, -1.f}, {1.f, -1.f, -1.f}, {1.f, 1.f, -1.f},
+                {-1.f, 1.f, -1.f}, {-1.f, -1.f, 1.f}, {1.f, -1.f, 1.f},
+                {1.f, 1.f, 1.f}, {-1.f, 1.f, 1.f}}};
+            const std::array<std::array<std::size_t, 2>, 12> edges{{
+                {{0, 1}}, {{1, 2}}, {{2, 3}}, {{3, 0}},
+                {{4, 5}}, {{5, 6}}, {{6, 7}}, {{7, 4}},
+                {{0, 4}}, {{1, 5}}, {{2, 6}}, {{3, 7}}}};
+            const auto box = [&](float size, Color color) {
+                for (const auto& edge : edges) {
+                    const Vec3 a = vertices[edge[0]], b = vertices[edge[1]];
+                    line({a.x * size, a.y * size, a.z * size},
+                         {b.x * size, b.y * size, b.z * size}, color);
+                }
+            };
+            if (state.options[0])
+                box(1.f, core::active_theme.accent);
+            if (state.options[2])
+                box(1.2f, core::active_theme.text_dim);
         });
         manager.add_window(window);
     }
@@ -334,7 +385,7 @@ int main(int argc, char** argv) {
     State state;
     if (!parse_arguments(argc, argv, frames, state.theme))
         return 2;
-    core::set_theme(make_theme(state.theme));
+    core::set_theme(make_theme(state.theme, {105, 85, 235}));
     return sdl2_opengl::run_sdl2_opengl_application(
         "zgui example", 1000, 640,
         [&state](WindowManager& manager, sdl2_opengl::OpenGLGraphics&) {
@@ -343,6 +394,14 @@ int main(int argc, char** argv) {
         frames,
         [&state](WindowManager&, sdl2_opengl::OpenGLGraphics&, sdl2_opengl::SDL2Input&,
                  std::size_t) {
+            const auto now = std::chrono::steady_clock::now();
+            const float elapsed =
+                std::min(0.1f, std::chrono::duration<float>(now - state.last_frame).count());
+            state.last_frame = now;
+            if (state.enabled)
+                state.yaw = std::fmod(
+                    state.yaw + elapsed * (0.1f + 0.005f * static_cast<float>(state.amount)),
+                    6.2831853f);
             state.progress = static_cast<float>(state.amount) / 100.f;
             const std::vector<std::string> values{
                 std::to_string(state.amount), std::to_string(state.scale), state.selection,

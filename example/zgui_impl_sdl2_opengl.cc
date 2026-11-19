@@ -426,7 +426,11 @@ void zgui::sdl2_opengl::OpenGLGraphics::append_geometry(const zgui::Vertex* vert
                                                         std::size_t count) {
     if (count == 0)
         return;
-    if (!batches_.empty() && batches_.back().topology == pending_topology_) {
+    const bool disconnected_topology =
+        pending_topology_ == zgui::VertexTopology::LINE_LIST ||
+        pending_topology_ == zgui::VertexTopology::TRIANGLE_LIST;
+    if (disconnected_topology && !batches_.empty() &&
+        batches_.back().topology == pending_topology_) {
         batches_.back().vertices.insert(batches_.back().vertices.end(), vertices,
                                         vertices + count);
         return;

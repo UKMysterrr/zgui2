@@ -1,5 +1,7 @@
 # zgui
 
+Note: Copilot and other LLM's used to assist in my fork of [This.](https://github.com/zxvnme/zgui)
+and I'm just mucking about really.
 ![zgui2 preview](docs/zgui2.gif)
 
 zgui is a retained-mode, dependency-free C++17 GUI toolkit. The core in

@@ -1386,24 +1386,29 @@ void zgui::TextInput::set_value(std::string* value) {
     cursor_ = value_->size();
 }
 
+void zgui::TextInput::set_password_mode(bool enabled) {
+    password_mode_ = enabled;
+}
+
 void zgui::TextInput::draw() {
     const zgui::Point position = get_absolute_position();
     const zgui::Point size = get_size();
     auto& graphics = *zgui::core::graphics;
-    graphics.draw_frame(position, size, zgui::Color(189, 189, 189));
+    graphics.draw_frame(position, size, zgui::core::active_theme.control_bg);
 
     const float text_x = position.x + 3.f;
     const float text_y = position.y + (size.y - 12.f) / 2.f;
     const float available_width = std::max(0.f, size.x - 6.f);
-    const std::string before_cursor = value_->substr(0, std::min(cursor_, value_->size()));
+    const std::string display = password_mode_ ? std::string(value_->size(), '*') : *value_;
+    const std::string before_cursor = display.substr(0, std::min(cursor_, display.size()));
     const float cursor_width = graphics.measure_text_width(before_cursor);
-    const float text_width = graphics.measure_text_width(*value_);
+    const float text_width = graphics.measure_text_width(display);
     const float scroll = std::clamp(cursor_width - available_width + 1.f, 0.f,
                                     std::max(0.f, text_width - available_width));
     ClipScope clip(graphics, static_cast<int>(position.x + 3.f), static_cast<int>(position.y + 1.f),
                    std::max(0, static_cast<int>(size.x - 6.f)),
                    std::max(0, static_cast<int>(size.y - 2.f)));
-    graphics.draw_text(*value_, zgui::Point(text_x - scroll, text_y),
+    graphics.draw_text(display, zgui::Point(text_x - scroll, text_y),
                        zgui::core::active_theme.text_primary);
     if (zgui::core::focused_text_input == this) {
         const zgui::Point cursor(text_x + cursor_width - scroll, position.y + 3.f);
@@ -1459,17 +1464,18 @@ bool zgui::TextInput::handle_mouse_press(zgui::Point position) {
     auto& graphics = *zgui::core::graphics;
     const Point absolute = get_absolute_position();
     const float available_width = std::max(0.f, get_size().x - 6.f);
+    const std::string display = password_mode_ ? std::string(value_->size(), '*') : *value_;
     const float current_width =
-        graphics.measure_text_width(value_->substr(0, std::min(cursor_, value_->size())));
+        graphics.measure_text_width(display.substr(0, std::min(cursor_, display.size())));
     const float scroll =
         std::clamp(current_width - available_width + 1.f, 0.f,
-                   std::max(0.f, graphics.measure_text_width(*value_) - available_width));
+                   std::max(0.f, graphics.measure_text_width(display) - available_width));
     const float target_x = position.x - (absolute.x + 3.f) + scroll;
     float nearest_distance = std::numeric_limits<float>::max();
     cursor_ = 0;
     for (std::size_t index = 0; index <= value_->size(); ++index) {
         const float distance =
-            std::abs(graphics.measure_text_width(value_->substr(0, index)) - target_x);
+            std::abs(graphics.measure_text_width(display.substr(0, index)) - target_x);
         if (distance < nearest_distance) {
             nearest_distance = distance;
             cursor_ = index;
@@ -2816,6 +2822,10 @@ void zgui::GroupBox::set_fit_content(bool fit_content) {
     fit_content_ = fit_content;
 }
 
+void zgui::GroupBox::set_title_alignment(zgui::TextAlignment alignment) {
+    title_alignment_ = alignment;
+}
+
 void zgui::GroupBox::set_size(const zgui::Point& size) {
     UIElement::set_size(size);
     layout_sub_tabs();
@@ -2864,10 +2874,14 @@ void zgui::GroupBox::draw() {
         zgui::Point(std::max(0.f, size.x - 2.f), std::max(0.f, bottom - border_y - 1.f)),
         theme.groupbox_bg);
 
-    const float title_x = position.x + spacing::kGroupInnerPadding + 2.f;
     const std::string title =
         truncate_with_ellipsis(graphics, title_, std::max(0.f, size.x - 20.f));
     const float title_width = graphics.measure_text_width(title);
+    float title_x = position.x + spacing::kGroupInnerPadding + 2.f;
+    if (title_alignment_ == TextAlignment::center)
+        title_x = position.x + (size.x - title_width) / 2.f;
+    else if (title_alignment_ == TextAlignment::right)
+        title_x = position.x + size.x - spacing::kGroupInnerPadding - 2.f - title_width;
     const float notch_start = title_.empty() ? title_x : title_x - 4.f;
     const float notch_end = title_.empty() ? notch_start : title_x + title_width + 4.f;
     if (!title_.empty()) {

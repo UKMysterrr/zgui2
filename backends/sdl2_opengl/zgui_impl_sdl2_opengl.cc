@@ -746,6 +746,7 @@ std::string zgui::sdl2_opengl::SDL2Input::key_name(int key) const {
     case SDLK_RCTRL:
         return "Ctrl";
     case SDLK_LALT:
+        return "LMENU";
     case SDLK_RALT:
         return "Alt";
     case SDLK_LGUI:

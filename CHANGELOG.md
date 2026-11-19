@@ -17,6 +17,8 @@ Notable changes to zgui are documented here.
 - `ZGUI_INSTALL` option to disable installation when included by a parent project.
 - Public-API showcase with ten pages, a shared headless regression test, and
   optional frame-limit/per-frame callback support in the SDL runner.
+- Classic example, centered group titles, and masked text input display.
+- Installable SDL2/OpenGL backend and public testing targets for CMake consumers.
 
 ### Changed
 
@@ -24,6 +26,8 @@ Notable changes to zgui are documented here.
 - The legacy `DRAW_UPDATE` macro now delegates to `draw_and_update`; its name and
   pointer-style call form remain available unless legacy macros are disabled.
 - `draw_filled_rect` is retained as a deprecated alias of `Graphics::fill_rect`.
+- Text inputs use the active theme's control background. The SDL backend calls
+  the left Alt key `LMENU`.
 
 ### Breaking changes
 
@@ -31,10 +35,8 @@ Notable changes to zgui are documented here.
   `OpenGLGraphics`; its rendering implementation now lives in a separate module.
 - The legacy render-test target and `ZGUI_BUILD_LEGACY_RENDER_TEST` option were
   removed. Migration: build `zgui_showcase` with `ZGUI_BUILD_EXAMPLES=ON`.
-- Repository restructure: extras/source_model_viewer and the Nanohook example
-  were moved out of this tree; `ZGUI_BUILD_EXTRAS` and
-  `zgui_source_model_viewer` no longer exist. `ZGUI_BUILD_EXAMPLES` builds only
-  `zgui_showcase`.
+- The optional model viewer and project-specific example were moved out of this
+  tree; `ZGUI_BUILD_EXTRAS` and `zgui_source_model_viewer` no longer exist.
 
 The public API snapshot also records additive helpers, bindings, layout/widgets,
 runtime theme/core functions, and slider spacing constants; no other public

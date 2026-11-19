@@ -5,6 +5,23 @@
 #include "../support/test_context.hh"
 #include "../support/test_harness.hh"
 
+TEST(group_box_can_center_its_title) {
+    zgui_test::Harness harness;
+    zgui::GroupBox group("title");
+    group.set_fit_content(false);
+    group.set_position({10.f, 10.f});
+    group.set_size({200.f, 80.f});
+    group.set_title_alignment(zgui::TextAlignment::center);
+    group.draw();
+    for (const auto& command : harness.graphics->commands()) {
+        if (command.type == zgui_test::GraphicsCommandType::Text && command.text == "title") {
+            CHECK_EQ(command.position.x, 90.f);
+            return;
+        }
+    }
+    CHECK(false);
+}
+
 TEST(group_box_fit_content_and_subtab_layout) {
     zgui_test::Harness harness;
     zgui::GroupBox group("settings");

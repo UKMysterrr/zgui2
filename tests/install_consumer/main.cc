@@ -3,8 +3,19 @@
 // SPDX-License-Identifier: MIT
 
 #include <zgui.hh>
+#include <test_context.hh>
+
+#ifdef ZGUI_CONSUMER_BACKEND
+#include <zgui_impl_sdl2_opengl.hh>
+#endif
 
 int main() {
+    zgui_test::Harness harness;
+#ifdef ZGUI_CONSUMER_BACKEND
+    zgui::sdl2_opengl::SDL2Input backend_input;
+    if (backend_input.key_name(static_cast<int>(SDLK_LALT)) != "LMENU")
+        return 1;
+#endif
     zgui::UIElement element;
     element.set_position({1.f, 2.f});
     element.set_size({3.f, 4.f});

@@ -4,6 +4,7 @@ add_executable(zgui_tests
     fuzz/random_event_sequence.cc
     unit/test_primitives.cc
     unit/test_graphics_base.cc
+    unit/test_classic_slider.cc
     unit/test_groupbox_color.cc
     unit/test_lifetime_and_manager.cc
     unit/test_phase3_edges.cc

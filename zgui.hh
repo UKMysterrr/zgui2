@@ -951,6 +951,7 @@ namespace zgui {
         std::shared_ptr<std::string> owned_value_;
         std::function<void()> on_change_;
         std::size_t cursor_ = 0;
+        bool password_mode_ = false;
 
     public:
         /// Creates an input with non-owning string storage.
@@ -966,6 +967,8 @@ namespace zgui {
         void set_on_change(std::function<void()> on_change);
         /// Changes the non-owning binding; null uses internal fallback storage.
         void set_value(std::string* value);
+        /// Masks displayed characters without changing the bound value.
+        void set_password_mode(bool enabled);
         /// Draws the current string and caret.
         void draw() override;
         /// Processes text bytes and cursor/edit key transitions while focused.
@@ -1234,6 +1237,7 @@ namespace zgui {
     private:
         std::shared_ptr<SubTabBar> sub_tabs_;
         bool fit_content_ = true;
+        TextAlignment title_alignment_ = TextAlignment::left;
 
         void layout_sub_tabs();
 
@@ -1248,6 +1252,8 @@ namespace zgui {
         std::shared_ptr<SubTabBar> get_sub_tabs() const;
         /// Enables or disables automatic group sizing as rows are added.
         void set_fit_content(bool fit_content);
+        /// Sets the title alignment along the top border.
+        void set_title_alignment(TextAlignment alignment);
         /// Sizes the group to its content plus non-negative bottom padding.
         void fit_to_content(float bottom_padding = spacing::kGroupBottomPad);
         /// Resizes the group and relays out its sub-tab strip.

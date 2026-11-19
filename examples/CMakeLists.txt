@@ -9,3 +9,8 @@ add_executable(zgui_showcase
 target_link_libraries(zgui_showcase PRIVATE zgui::sdl2_opengl)
 target_compile_features(zgui_showcase PRIVATE cxx_std_17)
 zgui_apply_project_options(zgui_showcase)
+
+add_executable(zgui_classic_example classic_example/main.cc)
+target_link_libraries(zgui_classic_example PRIVATE zgui::sdl2_opengl)
+target_compile_features(zgui_classic_example PRIVATE cxx_std_17)
+zgui_apply_project_options(zgui_classic_example)

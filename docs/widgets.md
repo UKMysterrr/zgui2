@@ -193,6 +193,8 @@ Construct with a string pointer, reference, or `Bound<std::string>` and an
 optional `void()` callback. Clicking focuses it; only printable ASCII is
 accepted. Backspace, delete, cursor keys, Home, and End are handled by `Input`.
 Destroying the focused input clears the global focus pointer.
+`set_password_mode(true)` masks the display with asterisks; the bound string
+still contains the original text and is not securely erased.
 
 ```cpp
 void add_text_input(zgui::UIElement& parent) {
@@ -290,6 +292,7 @@ void add_subtabs(zgui::GroupBox& group) {
 Construct with an optional title. Add rows with `StackLayout(group)` and call
 `fit_to_content()` to size the group to its children. `set_fit_content(false)`
 disables automatic sizing. Nested sub-tabs are supported.
+`set_title_alignment()` changes the title alignment; the default is left.
 
 ```cpp
 void add_group(zgui::UIElement& parent) {

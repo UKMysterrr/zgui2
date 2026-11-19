@@ -53,6 +53,47 @@ TEST(text_input_accepts_printable_ascii_only) {
     CHECK_EQ(changes, 1);
 }
 
+TEST(password_input_masks_text_and_uses_masked_caret_positions) {
+    zgui_test::Harness harness;
+    std::string value = "secret";
+    zgui::TextInput input(value);
+    input.set_size({100.f, 20.f});
+    input.set_password_mode(true);
+    input.draw();
+    CHECK_EQ(harness.graphics->texts().at(0), "******");
+    CHECK(input.handle_mouse_press({19.f, 10.f}));
+    harness.input->type("X");
+    input.update();
+    CHECK_EQ(value, "seXcret");
+    harness.graphics->clear_commands();
+    input.draw();
+    CHECK_EQ(harness.graphics->texts().at(0), "*******");
+    input.set_password_mode(false);
+    harness.graphics->clear_commands();
+    input.draw();
+    CHECK_EQ(harness.graphics->texts().at(0), value);
+}
+
+TEST(text_input_background_uses_the_active_theme) {
+    zgui_test::Harness harness;
+    zgui::Theme theme = zgui::core::default_theme;
+    theme.control_bg = {11, 22, 33};
+    zgui::core::set_theme(theme);
+    std::string value;
+    zgui::TextInput input(value);
+    input.set_size({100.f, 20.f});
+    input.draw();
+    bool found = false;
+    for (const auto& command : harness.graphics->commands()) {
+        if (command.type == zgui_test::GraphicsCommandType::Geometry && !command.vertices.empty()) {
+            const auto color = command.vertices.front().color;
+            if (color.r == 11 && color.g == 22 && color.b == 33)
+                found = true;
+        }
+    }
+    CHECK(found);
+}
+
 TEST(bound_values_are_owned_by_widgets_and_color_popups) {
     zgui_test::Harness harness;
 

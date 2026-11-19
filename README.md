@@ -4,9 +4,9 @@ zgui is a retained-mode, dependency-free C++17 GUI toolkit. Its core provides
 widgets, layout, clipping, and window management; applications provide graphics
 and input implementations.
 
-This directory is intended to replace the contents of a fork of
-[zxvnme/zgui](https://github.com/zxvnme/zgui). It keeps the upstream license
-notice in [LICENSE](LICENSE).
+It keeps the upstream license notice in [LICENSE](LICENSE).
+The old v1 codebase remains available on the
+[`legacy` branch](https://github.com/UKMysterrr/zgui2/tree/legacy).
 
 ## Features
 
@@ -61,19 +61,61 @@ cmake -S . -B build/showcase -DCMAKE_BUILD_TYPE=Release \
   -DZGUI_BUILD_EXAMPLES=ON
 cmake --build build/showcase
 build/showcase/examples/zgui_showcase --frames 60 --theme light --fuzz
+build/showcase/examples/zgui_classic_example
 ```
 
-To install the library and CMake package:
+The classic login form is a widget demonstration, not an authentication
+system. Its password field masks display only; its value remains in memory.
+
+## Using zgui in a CMake project
+
+The SDL2/OpenGL backend requires SDL2 and OpenGL development packages. To
+fetch zgui from GitHub, add the following to your project's `CMakeLists.txt`
+alongside your own `main.cc` and `tests.cc`:
+
+```cmake
+cmake_minimum_required(VERSION 3.14)
+project(my_app LANGUAGES CXX)
+include(FetchContent)
+
+set(ZGUI_BUILD_BACKEND_SDL2_OPENGL ON CACHE BOOL "")
+FetchContent_Declare(zgui
+  GIT_REPOSITORY https://github.com/UKMysterrr/zgui2.git
+  GIT_TAG main) # Pin a commit for reproducible builds.
+FetchContent_MakeAvailable(zgui)
+
+add_executable(my_app main.cc)
+target_link_libraries(my_app PRIVATE zgui::zgui zgui::sdl2_opengl)
+add_executable(my_tests tests.cc)
+target_link_libraries(my_tests PRIVATE zgui::testing)
+```
+
+Alternatively, install zgui and its CMake package (the backend is included
+when its dependencies are available):
 
 ```sh
 cmake --preset release
 cmake --build --preset release
-cmake --install build/release --prefix install
+cmake --install build/release --prefix /absolute/path/to/zgui-install
 ```
 
-Consumers can use `find_package(zgui CONFIG REQUIRED)` and link
-`zgui::zgui`; the optional SDL2/OpenGL target is `zgui::sdl2_opengl`. The
-`zgui::testing` target provides the headless test helpers.
+Then use this in the external project's `CMakeLists.txt`:
+
+```cmake
+cmake_minimum_required(VERSION 3.14)
+project(my_app LANGUAGES CXX)
+find_package(zgui CONFIG REQUIRED COMPONENTS sdl2_opengl)
+
+add_executable(my_app main.cc)
+target_link_libraries(my_app PRIVATE zgui::zgui zgui::sdl2_opengl)
+add_executable(my_tests tests.cc)
+target_link_libraries(my_tests PRIVATE zgui::testing)
+```
+
+Configure it with `cmake -S . -B build -DCMAKE_PREFIX_PATH=/absolute/path/to/zgui-install`.
+For a core-only application, omit the component and the backend target.
+Include `<zgui.hh>` for the core, `<zgui_impl_sdl2_opengl.hh>` for the backend,
+and `<test_context.hh>` for the headless test helpers.
 
 The source packer creates a distributable `zgui.hh` and `zgui.cc` pair under
 `dist/`:

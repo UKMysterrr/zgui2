@@ -5,7 +5,7 @@
 #ifndef ZGUI_IMPL_SDL2_OPENGL_HH
 #define ZGUI_IMPL_SDL2_OPENGL_HH
 
-#include "../../zgui.hh"
+#include "zgui.hh"
 
 #include <GL/gl.h>
 #include <SDL2/SDL.h>

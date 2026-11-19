@@ -3,6 +3,7 @@ project(zgui VERSION 0.1.0 LANGUAGES CXX)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
+include(CTest)
 
 option(ZGUI_BUILD_SHARED "Build zgui as a shared library" OFF)
 option(ZGUI_BUILD_BACKEND_SDL2_OPENGL "Build the SDL2/OpenGL backend when available" ON)
@@ -136,4 +137,11 @@ endif()
 
 if(ZGUI_BUILD_EXAMPLES)
     add_subdirectory(example)
+endif()
+
+if(BUILD_TESTING)
+    add_executable(zgui_tests tests/zgui_tests.cc)
+    target_link_libraries(zgui_tests PRIVATE zgui::zgui)
+    zgui_apply_project_options(zgui_tests)
+    add_test(NAME zgui_tests COMMAND zgui_tests)
 endif()

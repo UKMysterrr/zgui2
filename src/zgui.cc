@@ -562,6 +562,11 @@ zgui::Point zgui::UIElement::get_absolute_position() const {
 }
 
 void zgui::UIElement::set_position(const zgui::Point& position) {
+    if (!std::isfinite(position.x) || !std::isfinite(position.y)) {
+        assert(std::isfinite(position.x) && std::isfinite(position.y) &&
+               "element position must be finite");
+        return;
+    }
     position_ = position;
 }
 
@@ -576,8 +581,12 @@ void zgui::UIElement::set_anchors(bool left, bool right, bool top, bool bottom) 
 
 void zgui::UIElement::set_horizontal_constraints(float left_fraction, float right_fraction,
                                                  float left_offset, float right_offset) {
-    if (left_fraction < 0.f || right_fraction > 1.f || left_fraction > right_fraction) {
+    if (!std::isfinite(left_fraction) || !std::isfinite(right_fraction) ||
+        !std::isfinite(left_offset) || !std::isfinite(right_offset) ||
+        left_fraction < 0.f || right_fraction > 1.f || left_fraction > right_fraction) {
         assert(left_fraction >= 0.f && right_fraction <= 1.f && left_fraction <= right_fraction &&
+               std::isfinite(left_fraction) && std::isfinite(right_fraction) &&
+               std::isfinite(left_offset) && std::isfinite(right_offset) &&
                "horizontal constraints must be ordered within [0, 1]");
         return;
     }
@@ -594,8 +603,12 @@ void zgui::UIElement::set_horizontal_constraints(float left_fraction, float righ
 
 void zgui::UIElement::set_vertical_constraints(float top_fraction, float bottom_fraction,
                                                float top_offset, float bottom_offset) {
-    if (top_fraction < 0.f || bottom_fraction > 1.f || top_fraction > bottom_fraction) {
+    if (!std::isfinite(top_fraction) || !std::isfinite(bottom_fraction) ||
+        !std::isfinite(top_offset) || !std::isfinite(bottom_offset) ||
+        top_fraction < 0.f || bottom_fraction > 1.f || top_fraction > bottom_fraction) {
         assert(top_fraction >= 0.f && bottom_fraction <= 1.f && top_fraction <= bottom_fraction &&
+               std::isfinite(top_fraction) && std::isfinite(bottom_fraction) &&
+               std::isfinite(top_offset) && std::isfinite(bottom_offset) &&
                "vertical constraints must be ordered within [0, 1]");
         return;
     }
@@ -615,6 +628,11 @@ const zgui::Point& zgui::UIElement::get_size() const {
 }
 
 void zgui::UIElement::set_size(const zgui::Point& size) {
+    if (!std::isfinite(size.x) || !std::isfinite(size.y) || size.x < 0.f || size.y < 0.f) {
+        assert(std::isfinite(size.x) && std::isfinite(size.y) && size.x >= 0.f &&
+               size.y >= 0.f && "element size must be finite and non-negative");
+        return;
+    }
     const zgui::Point old_size = size_;
     size_ = size;
     for (UIElement* child : children_)
@@ -1027,7 +1045,7 @@ bool zgui::RadioGroup::handle_mouse_press(zgui::Point position) {
 zgui::ProgressBar::ProgressBar(float* value, std::string text)
     : value_(value != nullptr ? value : &fallback_value_) {
     assert(value != nullptr && "progress bar value must not be null");
-    *value_ = std::clamp(*value_, 0.f, 1.f);
+    *value_ = std::isfinite(*value_) ? std::clamp(*value_, 0.f, 1.f) : 0.f;
     set_title(std::move(text));
 }
 
@@ -1037,6 +1055,10 @@ zgui::ProgressBar::ProgressBar(const zgui::Bound<float>& value, std::string text
 }
 
 void zgui::ProgressBar::set_value(float value) {
+    if (!std::isfinite(value)) {
+        assert(std::isfinite(value) && "progress bar value must be finite");
+        return;
+    }
     *value_ = std::clamp(value, 0.f, 1.f);
 }
 
@@ -1998,9 +2020,9 @@ void zgui::TableView::add_row(const std::vector<std::string>& cells) {
 }
 
 void zgui::TableView::clear_rows() {
+    clear_selection();
     rows_.clear();
     row_backgrounds_.clear();
-    selected_row_.reset();
     scroll_offset_ = 0.f;
 }
 
@@ -2419,11 +2441,11 @@ std::size_t zgui::TabBar::tab_visible_widget_count(std::size_t index) const {
 }
 
 std::size_t zgui::TabBar::widget_count() const {
+    if (tabs_.empty())
+        return UIElement::widget_count();
     std::size_t count = 1;
     for (const Tab& tab : tabs_)
         count += tab.page->widget_count();
-    for (const UIElement* child : children_)
-        count += child->widget_count();
     return count;
 }
 
@@ -2968,11 +2990,11 @@ float zgui::GroupBox::content_right() const {
 }
 
 std::size_t zgui::GroupBox::widget_count() const {
-    return UIElement::widget_count() + (sub_tabs_ ? sub_tabs_->widget_count() : 0);
+    return UIElement::widget_count();
 }
 
 std::size_t zgui::GroupBox::visible_widget_count() const {
-    return UIElement::visible_widget_count() + (sub_tabs_ ? sub_tabs_->visible_widget_count() : 0);
+    return UIElement::visible_widget_count();
 }
 
 zgui::StackLayout::StackLayout(zgui::UIElement& parent, float start_y, float padding, float gap)
@@ -3079,6 +3101,11 @@ zgui::Window::Window(std::string title) {
 }
 
 void zgui::Window::set_minimum_size(float width, float height) {
+    if (!std::isfinite(width) || !std::isfinite(height) || width < 0.f || height < 0.f) {
+        assert(std::isfinite(width) && std::isfinite(height) && width >= 0.f &&
+               height >= 0.f && "window minimum size must be finite and non-negative");
+        return;
+    }
     min_width_ = std::max(1.f, width);
     min_height_ = std::max(1.f, height);
     set_size(get_size());
@@ -3430,11 +3457,9 @@ bool zgui::WindowManager::validate_layout(const zgui::Window& window, std::strin
             children.clear();
             for (const TabBar::Tab& tab : tabs->tabs_) {
                 const Rect viewport = tabs->child_clip_rect();
-                if (viewport.size.x <= 0.f || viewport.size.y <= 0.f ||
-                    tab.page->children_.empty()) {
-                    assert(viewport.size.x > 0.f && viewport.size.y > 0.f &&
-                           !tab.page->children_.empty());
-                    return fail("tab '" + tab.title + "' has an empty content page");
+                if (viewport.size.x <= 0.f || viewport.size.y <= 0.f) {
+                    assert(viewport.size.x > 0.f && viewport.size.y > 0.f);
+                    return fail("tab '" + tab.title + "' has an invalid content viewport");
                 }
                 if (!visit(*tab.page))
                     return false;

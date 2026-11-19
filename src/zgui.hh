@@ -773,7 +773,18 @@ namespace zgui {
                 assert(value != nullptr && "slider value must not be null");
                 value_ = &fallback_value_;
             }
-            *value_ = std::clamp(*value_, minimum_, maximum_);
+            if constexpr (std::is_floating_point<T>::value) {
+                if (!std::isfinite(minimum_) || !std::isfinite(maximum_)) {
+                    assert(std::isfinite(minimum_) && std::isfinite(maximum_) &&
+                           "slider range must be finite");
+                    minimum_ = T{};
+                    maximum_ = T{};
+                }
+                *value_ =
+                    std::isfinite(*value_) ? std::clamp(*value_, minimum_, maximum_) : minimum_;
+            } else {
+                *value_ = std::clamp(*value_, minimum_, maximum_);
+            }
             set_title(std::move(title));
         }
 
@@ -796,6 +807,12 @@ namespace zgui {
 
         /// Clamps and stores a value, calling the callback only on change.
         void set_value(T value) {
+            if constexpr (std::is_floating_point_v<T>) {
+                if (!std::isfinite(value)) {
+                    assert(std::isfinite(value) && "slider value must be finite");
+                    return;
+                }
+            }
             const T clamped = std::clamp(value, minimum_, maximum_);
             if (clamped == *value_)
                 return;

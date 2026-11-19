@@ -1,5 +1,5 @@
 // Copyright (c) 2019, zxvnme
-// Copyright (c) <YEAR>, <OWNER NAME OR HANDLE>
+// Copyright (c) 2026 UKMysterrr
 // SPDX-License-Identifier: MIT
 
 #ifndef ZGUI_IMPL_SDL2_OPENGL_HH
@@ -41,6 +41,7 @@ namespace zgui::sdl2_opengl {
         void flush_geometry();
         void set_topology(VertexTopology topology) override;
         void append_geometry(const std::vector<Vertex>& vertices, std::size_t count) override;
+        void append_geometry(const Vertex* vertices, std::size_t count) override;
 
     public:
         ~OpenGLGraphics() override = default;

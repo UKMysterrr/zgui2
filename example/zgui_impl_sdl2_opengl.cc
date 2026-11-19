@@ -1,5 +1,5 @@
 // Copyright (c) 2019, zxvnme
-// Copyright (c) <YEAR>, <OWNER NAME OR HANDLE>
+// Copyright (c) 2026 UKMysterrr
 // SPDX-License-Identifier: MIT
 
 #include "zgui_impl_sdl2_opengl.hh"
@@ -10,11 +10,30 @@
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <string_view>
 #include <utility>
 
 namespace {
+    struct SDLRuntime {
+        SDL_Window* window = nullptr;
+        SDL_GLContext context = nullptr;
+        bool initialized = false;
+        bool text_input_started = false;
+
+        ~SDLRuntime() {
+            if (text_input_started)
+                SDL_StopTextInput();
+            if (context != nullptr)
+                SDL_GL_DeleteContext(context);
+            if (window != nullptr)
+                SDL_DestroyWindow(window);
+            if (initialized)
+                SDL_Quit();
+        }
+    };
+
     constexpr int kCellWidth = 16;
     constexpr int kCellHeight = 14;
     constexpr int kGlyphHeight = 12;
@@ -400,9 +419,22 @@ void zgui::sdl2_opengl::OpenGLGraphics::set_topology(zgui::VertexTopology topolo
 
 void zgui::sdl2_opengl::OpenGLGraphics::append_geometry(const std::vector<zgui::Vertex>& vertices,
                                                         std::size_t count) {
+    append_geometry(vertices.data(), count);
+}
+
+void zgui::sdl2_opengl::OpenGLGraphics::append_geometry(const zgui::Vertex* vertices,
+                                                        std::size_t count) {
+    if (count == 0)
+        return;
+    if (!batches_.empty() && batches_.back().topology == pending_topology_) {
+        batches_.back().vertices.insert(batches_.back().vertices.end(), vertices,
+                                        vertices + count);
+        return;
+    }
+
     Batch batch;
     batch.topology = pending_topology_;
-    batch.vertices.assign(vertices.begin(), vertices.begin() + static_cast<std::ptrdiff_t>(count));
+    batch.vertices.assign(vertices, vertices + count);
     batches_.push_back(std::move(batch));
 }
 
@@ -433,7 +465,13 @@ void zgui::sdl2_opengl::OpenGLGraphics::reset() {
 
 void zgui::sdl2_opengl::OpenGLGraphics::set_clip_rect(int x, int y, int w, int h) {
     glEnable(GL_SCISSOR_TEST);
-    glScissor(x, viewport_height_ - (y + h), std::max(0, w), std::max(0, h));
+    const std::int64_t scissor_y =
+        static_cast<std::int64_t>(viewport_height_) -
+        (static_cast<std::int64_t>(y) + static_cast<std::int64_t>(h));
+    const GLint bounded_y = static_cast<GLint>(
+        std::clamp<std::int64_t>(scissor_y, std::numeric_limits<GLint>::min(),
+                                 std::numeric_limits<GLint>::max()));
+    glScissor(x, bounded_y, std::max(0, w), std::max(0, h));
 }
 
 void zgui::sdl2_opengl::OpenGLGraphics::reset_clip_rect() {
@@ -780,42 +818,39 @@ int zgui::sdl2_opengl::run_sdl2_opengl_application(const std::string& title, int
         std::cerr << "invalid SDL2/OpenGL application configuration\n";
         return 1;
     }
+    SDLRuntime runtime;
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         std::cerr << "SDL_Init failed: " << SDL_GetError() << '\n';
         return 1;
     }
+    runtime.initialized = true;
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-    SDL_Window* window =
+    runtime.window =
         SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width,
                          height, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-    if (window == nullptr) {
+    if (runtime.window == nullptr) {
         std::cerr << "SDL_CreateWindow failed: " << SDL_GetError() << '\n';
-        SDL_Quit();
         return 1;
     }
 
-    SDL_GLContext context = SDL_GL_CreateContext(window);
-    if (context == nullptr) {
+    runtime.context = SDL_GL_CreateContext(runtime.window);
+    if (runtime.context == nullptr) {
         std::cerr << "SDL_GL_CreateContext failed: " << SDL_GetError() << '\n';
-        SDL_DestroyWindow(window);
-        SDL_Quit();
         return 1;
     }
-    if (SDL_GL_MakeCurrent(window, context) != 0) {
+    if (SDL_GL_MakeCurrent(runtime.window, runtime.context) != 0) {
         std::cerr << "SDL_GL_MakeCurrent failed: " << SDL_GetError() << '\n';
-        SDL_GL_DeleteContext(context);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
         return 1;
     }
 
     int result = 0;
     SDL_GL_SetSwapInterval(1);
     SDL_StartTextInput();
+    runtime.text_input_started = true;
     {
         auto graphics = std::make_shared<OpenGLGraphics>();
         auto input = std::make_shared<SDL2Input>();
@@ -840,7 +875,7 @@ int zgui::sdl2_opengl::run_sdl2_opengl_application(const std::string& title, int
 
                     int viewport_width = 0;
                     int viewport_height = 0;
-                    SDL_GL_GetDrawableSize(window, &viewport_width, &viewport_height);
+                    SDL_GL_GetDrawableSize(runtime.window, &viewport_width, &viewport_height);
                     if (viewport_width <= 0 || viewport_height <= 0) {
                         SDL_Delay(8);
                         continue;
@@ -855,7 +890,7 @@ int zgui::sdl2_opengl::run_sdl2_opengl_application(const std::string& title, int
                     manager.update();
                     manager.draw();
                     graphics->end_frame();
-                    SDL_GL_SwapWindow(window);
+                    SDL_GL_SwapWindow(runtime.window);
                     ++frame_index;
                     if (frame_limit > 0 && frame_index >= frame_limit)
                         running = false;
@@ -871,10 +906,6 @@ int zgui::sdl2_opengl::run_sdl2_opengl_application(const std::string& title, int
         zgui::core::graphics.reset();
         zgui::core::input.reset();
     }
-    SDL_StopTextInput();
-    SDL_GL_DeleteContext(context);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
     return result;
 }
 

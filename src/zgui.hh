@@ -204,6 +204,7 @@ namespace zgui {
         VertexTopology vertex_topology_ = VertexTopology::TRIANGLE_LIST;
 
         virtual void append_geometry(const std::vector<Vertex>& vertices, std::size_t count);
+        virtual void append_geometry(const Vertex* vertices, std::size_t count);
         virtual void set_topology(VertexTopology vertex_topology);
 
     public:
@@ -398,6 +399,14 @@ namespace zgui {
     /// Base node for the retained widget tree.
     class UIElement {
         friend class WindowManager;
+
+    private:
+        struct ChildSnapshot {
+            std::vector<UIElement*> elements;
+            std::vector<std::shared_ptr<UIElement>> owners;
+        };
+
+        ChildSnapshot snapshot_children() const;
 
     protected:
         std::vector<UIElement*> children_;
@@ -747,18 +756,29 @@ namespace zgui {
         void update_from_mouse() {
             const Point absolute = get_absolute_position();
             const float width = get_size().x;
-            if (width <= 0.f)
+            const float mouse_x = core::input->mouse_position().x;
+            if (!std::isfinite(width) || width <= 0.f || !std::isfinite(absolute.x) ||
+                !std::isfinite(mouse_x))
                 return;
-            const float ratio =
-                std::clamp((core::input->mouse_position().x - absolute.x) / width, 0.f, 1.f);
-            const double mapped =
-                static_cast<double>(minimum_) +
-                (static_cast<double>(maximum_) - static_cast<double>(minimum_)) * ratio;
+            const float ratio = std::clamp((mouse_x - absolute.x) / width, 0.f, 1.f);
+            if (!std::isfinite(ratio))
+                return;
+            const long double minimum = static_cast<long double>(minimum_);
+            const long double maximum = static_cast<long double>(maximum_);
+            const long double mapped =
+                minimum * (1.L - static_cast<long double>(ratio)) +
+                maximum * static_cast<long double>(ratio);
             T next;
             if constexpr (std::is_integral<T>::value) {
-                next = static_cast<T>(std::round(mapped));
+                const long double rounded = std::round(mapped);
+                if (rounded <= minimum)
+                    next = minimum_;
+                else if (rounded >= maximum)
+                    next = maximum_;
+                else
+                    next = static_cast<T>(rounded);
             } else {
-                next = static_cast<T>(mapped);
+                next = static_cast<T>(std::clamp(mapped, minimum, maximum));
             }
             set_value(next);
         }

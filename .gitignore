@@ -6,6 +6,8 @@
 /out/
 /cmake-build-*/
 /dist/
+/CMakeUserPresets.json
+/Testing/
 **/build/
 **/out/
 **/cmake-build-*/

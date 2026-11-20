@@ -71,9 +71,11 @@ OpenGL 2.1 drawing. Core code depends only on the C++ standard library.
 `UIElement` stores raw child pointers for traversal and retains children added
 with `shared_ptr`. Adding a raw pointer is explicitly non-owning; the caller
 must ensure the child outlives its parent relationship. Removing a child or
-destroying either side detaches the relationship. Windows and overlays are
-retained by `WindowManager`. Popup widgets hold weak popup references so
-dismissing a popup does not extend its lifetime.
+destroying either side detaches the relationship. Draw, update, and input
+dispatch use child snapshots, so callbacks may safely remove or reparent
+shared-owned children during traversal. Windows and overlays are retained by
+`WindowManager`. Popup widgets hold weak popup references so dismissing a
+popup does not extend its lifetime.
 
 ## Frame loop
 
@@ -99,9 +101,11 @@ overlap.
 
 Avoid rebuilding the widget tree on every frame; keep shared widgets and update
 their bound values. `TableView` draws only visible rows, and clipping limits
-child drawing/hit testing. Reuse callbacks and avoid per-frame allocation in
-application callbacks, especially viewport render/input handlers. The core
-currently has no general-purpose virtualized list or frame allocator.
+child drawing/hit testing. Core geometry helpers use stack-backed vertex arrays,
+and the SDL/OpenGL backend combines adjacent geometry with matching topology
+into one batch. Reuse callbacks and avoid per-frame allocation in application
+callbacks, especially viewport render/input handlers. The core currently has
+no general-purpose virtualized list or frame allocator.
 
 ## Future work
 

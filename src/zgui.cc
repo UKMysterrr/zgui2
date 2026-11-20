@@ -4,8 +4,10 @@
 
 #include "zgui.hh"
 
+#include <array>
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <iomanip>
 #include <iterator>
 #include <limits>
@@ -44,6 +46,23 @@ namespace zgui::detail {
 
 namespace {
     constexpr std::size_t max_text_truncations = 1024;
+
+    int clip_coordinate(float value) {
+        if (std::isnan(value))
+            return 0;
+        const double coordinate = static_cast<double>(value);
+        const double minimum = static_cast<double>(std::numeric_limits<int>::min());
+        const double maximum = static_cast<double>(std::numeric_limits<int>::max());
+        if (coordinate <= minimum)
+            return std::numeric_limits<int>::min();
+        if (coordinate >= maximum)
+            return std::numeric_limits<int>::max();
+        return static_cast<int>(coordinate);
+    }
+
+    int clip_extent(float value) {
+        return std::max(0, clip_coordinate(value));
+    }
 
     struct HsvColor {
         float hue;
@@ -216,10 +235,9 @@ namespace {
             const zgui::Theme& theme = zgui::core::active_theme;
             auto& graphics = *zgui::core::graphics;
             graphics.draw_frame(position, size, theme.control_bg);
-            ClipScope clip(graphics, static_cast<int>(position.x + 1.f),
-                           static_cast<int>(position.y + 1.f),
-                           std::max(0, static_cast<int>(size.x - 2.f)),
-                           std::max(0, static_cast<int>(size.y - 2.f)));
+            ClipScope clip(graphics, clip_coordinate(position.x + 1.f),
+                           clip_coordinate(position.y + 1.f), clip_extent(size.x - 2.f),
+                           clip_extent(size.y - 2.f));
             for (std::size_t i = 0; i < data_->items.size(); ++i) {
                 const float y = position.y + 1.f + static_cast<float>(i) * row_height_;
                 if (y >= position.y + size.y - 1.f)
@@ -323,6 +341,13 @@ void zgui::Graphics::append_geometry(const std::vector<zgui::Vertex>& vertices, 
     }
 }
 
+void zgui::Graphics::append_geometry(const zgui::Vertex* vertices, std::size_t count) {
+    if (count == 0)
+        return;
+    const std::vector<zgui::Vertex> copied(vertices, vertices + count);
+    append_geometry(copied, count);
+}
+
 void zgui::Graphics::flush() {
     draw();
 }
@@ -333,9 +358,14 @@ void zgui::Graphics::push_clip_rect(int x, int y, int w, int h) {
         const ClipRect& parent = clip_stack_.back();
         const int left = std::max(clip.x, parent.x);
         const int top = std::max(clip.y, parent.y);
-        const int right = std::min(clip.x + clip.w, parent.x + parent.w);
-        const int bottom = std::min(clip.y + clip.h, parent.y + parent.h);
-        clip = {left, top, std::max(0, right - left), std::max(0, bottom - top)};
+        const std::int64_t right =
+            std::min(static_cast<std::int64_t>(clip.x) + clip.w,
+                     static_cast<std::int64_t>(parent.x) + parent.w);
+        const std::int64_t bottom =
+            std::min(static_cast<std::int64_t>(clip.y) + clip.h,
+                     static_cast<std::int64_t>(parent.y) + parent.h);
+        clip = {left, top, static_cast<int>(std::max<std::int64_t>(0, right - left)),
+                static_cast<int>(std::max<std::int64_t>(0, bottom - top))};
     }
     clip_stack_.push_back(clip);
     set_clip_rect(clip.x, clip.y, clip.w, clip.h);
@@ -359,11 +389,12 @@ std::size_t zgui::Graphics::clip_depth() const {
 }
 
 void zgui::Graphics::draw_line(zgui::Point start, zgui::Point end, zgui::Color color) {
-    const std::vector<zgui::Vertex> vertices = {zgui::Vertex(start, zgui::Point(0.f, 0.f), color),
-                                                zgui::Vertex(end, zgui::Point(0.f, 0.f), color)};
+    const std::array<zgui::Vertex, 2> vertices = {
+        zgui::Vertex(start, zgui::Point(0.f, 0.f), color),
+        zgui::Vertex(end, zgui::Point(0.f, 0.f), color)};
 
     this->set_topology(zgui::VertexTopology::LINE_LIST);
-    this->append_geometry(vertices, 2);
+    this->append_geometry(vertices.data(), vertices.size());
 }
 
 void zgui::Graphics::draw_rect(zgui::Point position, zgui::Point size, zgui::Color color) {
@@ -377,7 +408,7 @@ void zgui::Graphics::draw_rect(zgui::Point position, zgui::Point size, zgui::Col
 }
 
 void zgui::Graphics::fill_rect(zgui::Point position, zgui::Point size, zgui::Color color) {
-    const std::vector<zgui::Vertex> vertices = {
+    const std::array<zgui::Vertex, 6> vertices = {
         zgui::Vertex(position, zgui::Point(0.f, 0.f), color),
         zgui::Vertex(zgui::Point(position.x + size.x, position.y), zgui::Point(0.f, 0.f), color),
         zgui::Vertex(zgui::Point(position.x, position.y + size.y), zgui::Point(0.f, 0.f), color),
@@ -387,13 +418,13 @@ void zgui::Graphics::fill_rect(zgui::Point position, zgui::Point size, zgui::Col
                      color)};
 
     this->set_topology(zgui::VertexTopology::TRIANGLE_LIST);
-    this->append_geometry(vertices, 6);
+    this->append_geometry(vertices.data(), vertices.size());
 }
 
 void zgui::Graphics::draw_gradient_rect(zgui::Point position, zgui::Point size,
                                         zgui::Color top_left, zgui::Color top_right,
                                         zgui::Color bottom_right, zgui::Color bottom_left) {
-    const std::vector<zgui::Vertex> vertices = {
+    const std::array<zgui::Vertex, 6> vertices = {
         zgui::Vertex(position, zgui::Point(0.f, 0.f), top_left),
         zgui::Vertex(zgui::Point(position.x + size.x, position.y), zgui::Point(0.f, 0.f),
                      top_right),
@@ -405,7 +436,7 @@ void zgui::Graphics::draw_gradient_rect(zgui::Point position, zgui::Point size,
         zgui::Vertex(zgui::Point(position.x, position.y + size.y), zgui::Point(0.f, 0.f),
                      bottom_left)};
     set_topology(zgui::VertexTopology::TRIANGLE_LIST);
-    append_geometry(vertices, vertices.size());
+    append_geometry(vertices.data(), vertices.size());
 }
 
 void zgui::Graphics::draw_frame(zgui::Point position, zgui::Point size, zgui::Color fill) {
@@ -425,6 +456,10 @@ zgui::UIElement::~UIElement() {
     if (parent_ != nullptr)
         parent_->remove_child(this);
     clear_children();
+}
+
+zgui::UIElement::ChildSnapshot zgui::UIElement::snapshot_children() const {
+    return {children_, owned_children_};
 }
 
 void zgui::UIElement::add_child(zgui::UIElement* child) {
@@ -518,31 +553,41 @@ void zgui::UIElement::draw() {
     if (!zgui::core::require_initialized())
         return;
     const zgui::Rect clip = child_clip_rect();
-    ClipScope child_clip(*zgui::core::graphics, static_cast<int>(clip.position.x),
-                         static_cast<int>(clip.position.y), static_cast<int>(clip.size.x),
-                         static_cast<int>(clip.size.y));
-    for (const auto child : children_)
-        child->draw();
+    ClipScope child_clip(*zgui::core::graphics, clip_coordinate(clip.position.x),
+                         clip_coordinate(clip.position.y), clip_extent(clip.size.x),
+                         clip_extent(clip.size.y));
+    const ChildSnapshot children = snapshot_children();
+    for (UIElement* child : children.elements) {
+        if (child != nullptr && child->parent_ == this)
+            child->draw();
+    }
 }
 
 void zgui::UIElement::update() {
     if (!zgui::core::require_initialized())
         return;
-    for (const auto child : children_)
-        child->update();
+    const ChildSnapshot children = snapshot_children();
+    for (UIElement* child : children.elements) {
+        if (child != nullptr && child->parent_ == this)
+            child->update();
+    }
 }
 
 bool zgui::UIElement::handle_mouse_press(zgui::Point position) {
-    for (auto child = children_.rbegin(); child != children_.rend(); ++child) {
-        if ((*child)->contains_point(position) && (*child)->handle_mouse_press(position))
+    const ChildSnapshot children = snapshot_children();
+    for (auto child = children.elements.rbegin(); child != children.elements.rend(); ++child) {
+        if (*child != nullptr && (*child)->parent_ == this && (*child)->contains_point(position) &&
+            (*child)->handle_mouse_press(position))
             return true;
     }
     return false;
 }
 
 bool zgui::UIElement::handles_mouse_wheel(zgui::Point position) const {
-    for (auto child = children_.rbegin(); child != children_.rend(); ++child) {
-        if ((*child)->contains_point(position) && (*child)->handles_mouse_wheel(position))
+    const ChildSnapshot children = snapshot_children();
+    for (auto child = children.elements.rbegin(); child != children.elements.rend(); ++child) {
+        if (*child != nullptr && (*child)->parent_ == this && (*child)->contains_point(position) &&
+            (*child)->handles_mouse_wheel(position))
             return true;
     }
     return false;
@@ -1315,10 +1360,9 @@ void zgui::MultiComboBox::draw() {
         summary = "None";
 
     {
-        ClipScope clip(graphics, static_cast<int>(position.x + 4.f),
-                       static_cast<int>(position.y + 1.f),
-                       std::max(0, static_cast<int>(size.x - 18.f)),
-                       std::max(0, static_cast<int>(size.y - 2.f)));
+        ClipScope clip(graphics, clip_coordinate(position.x + 4.f),
+                       clip_coordinate(position.y + 1.f), clip_extent(size.x - 18.f),
+                       clip_extent(size.y - 2.f));
         graphics.draw_text(truncate_with_ellipsis(graphics, summary, std::max(0.f, size.x - 18.f)),
                            zgui::Point(position.x + 4.f, position.y + (size.y - 12.f) / 2.f),
                            theme.text_primary);
@@ -1405,9 +1449,8 @@ void zgui::TextInput::draw() {
     const float text_width = graphics.measure_text_width(display);
     const float scroll = std::clamp(cursor_width - available_width + 1.f, 0.f,
                                     std::max(0.f, text_width - available_width));
-    ClipScope clip(graphics, static_cast<int>(position.x + 3.f), static_cast<int>(position.y + 1.f),
-                   std::max(0, static_cast<int>(size.x - 6.f)),
-                   std::max(0, static_cast<int>(size.y - 2.f)));
+    ClipScope clip(graphics, clip_coordinate(position.x + 3.f), clip_coordinate(position.y + 1.f),
+                   clip_extent(size.x - 6.f), clip_extent(size.y - 2.f));
     graphics.draw_text(display, zgui::Point(text_x - scroll, text_y),
                        zgui::core::active_theme.text_primary);
     if (zgui::core::focused_text_input == this) {
@@ -1892,10 +1935,12 @@ void zgui::ColorButton::draw() {
     const float bar_width = std::max(0.f, button_size.x - 6.f);
     const float bar_x = button_position.x + 3.f;
     const float bar_y = button_position.y + button_size.y - bar_height - 3.f;
-    for (int checker = 0; checker < static_cast<int>(bar_width); checker += 4) {
+    const std::size_t checker_count = static_cast<std::size_t>(clip_extent(bar_width));
+    for (std::size_t checker = 0; checker < checker_count; checker += 4) {
+        const float checker_x = static_cast<float>(checker);
         graphics.fill_rect(
-            zgui::Point(bar_x + static_cast<float>(checker), bar_y),
-            zgui::Point(std::min(4.f, bar_width - static_cast<float>(checker)), bar_height),
+            zgui::Point(bar_x + checker_x, bar_y),
+            zgui::Point(std::min(4.f, bar_width - checker_x), bar_height),
             ((checker / 4) % 2 == 0) ? theme.text_primary : theme.border_inner);
     }
     graphics.fill_rect(zgui::Point(bar_x, bar_y), zgui::Point(bar_width, bar_height), *value_);
@@ -2077,9 +2122,9 @@ void zgui::TableView::draw() {
     const std::vector<float> column_widths = effective_column_widths(content_width);
 
     {
-        ClipScope header_clip(graphics, static_cast<int>(header_position.x),
-                              static_cast<int>(header_position.y), static_cast<int>(content_width),
-                              static_cast<int>(header_height));
+        ClipScope header_clip(graphics, clip_coordinate(header_position.x),
+                              clip_coordinate(header_position.y), clip_extent(content_width),
+                              clip_extent(header_height));
         float column_x = header_position.x;
         for (std::size_t index = 0; index < columns_.size(); ++index) {
             if (column_widths[index] <= 0.f)
@@ -2097,9 +2142,9 @@ void zgui::TableView::draw() {
     const float rows_height = content_height();
     const float scroll = std::min(scroll_offset_, maximum_scroll());
     {
-        ClipScope rows_clip(graphics, static_cast<int>(position.x + 2.f),
-                            static_cast<int>(content_y), static_cast<int>(content_width),
-                            static_cast<int>(rows_height));
+        ClipScope rows_clip(graphics, clip_coordinate(position.x + 2.f),
+                            clip_coordinate(content_y), clip_extent(content_width),
+                            clip_extent(rows_height));
         std::size_t row_index = static_cast<std::size_t>(scroll / row_height_);
         float row_y = content_y + static_cast<float>(row_index) * row_height_ - scroll;
         for (; row_index < rows_.size() && row_y < content_y + rows_height;
@@ -2127,9 +2172,8 @@ void zgui::TableView::draw() {
                     continue;
                 if (column_index < row.size()) {
                     const Cell& cell = row[column_index];
-                    ClipScope cell_clip(graphics, static_cast<int>(column_x),
-                                        static_cast<int>(row_y), static_cast<int>(cell_width),
-                                        static_cast<int>(row_height_));
+                    ClipScope cell_clip(graphics, clip_coordinate(column_x), clip_coordinate(row_y),
+                                        clip_extent(cell_width), clip_extent(row_height_));
                     graphics.draw_text(truncate_with_ellipsis(graphics, cell.text, cell_width - 8.f,
                                                               !cell.user_data),
                                        zgui::Point(column_x + 4.f, row_y + 2.f),
@@ -2290,10 +2334,10 @@ void zgui::Viewport::draw() {
     graphics.draw_frame(position, size, zgui::core::active_theme.groupbox_bg);
     graphics.flush();
 
-    const int inner_x = static_cast<int>(position.x + 2.f);
-    const int inner_y = static_cast<int>(position.y + 2.f);
-    const int inner_width = std::max(0, static_cast<int>(size.x - 4.f));
-    const int inner_height = std::max(0, static_cast<int>(size.y - 4.f));
+    const int inner_x = clip_coordinate(position.x + 2.f);
+    const int inner_y = clip_coordinate(position.y + 2.f);
+    const int inner_width = clip_extent(size.x - 4.f);
+    const int inner_height = clip_extent(size.y - 4.f);
     ClipScope viewport_clip(graphics, inner_x, inner_y, inner_width, inner_height);
     if (on_render_)
         on_render_(inner_x, inner_y, inner_width, inner_height);
@@ -2422,8 +2466,6 @@ std::size_t zgui::TabBar::widget_count() const {
     std::size_t count = 1;
     for (const Tab& tab : tabs_)
         count += tab.page->widget_count();
-    for (const UIElement* child : children_)
-        count += child->widget_count();
     return count;
 }
 
@@ -2461,9 +2503,8 @@ void zgui::TabBar::draw() {
         const TabLayout tab_layout = measure_tab_layout(size.x);
         float tab_x = position.x;
         {
-            ClipScope header_clip(graphics, static_cast<int>(position.x),
-                                  static_cast<int>(position.y), static_cast<int>(size.x),
-                                  static_cast<int>(tab_height_));
+            ClipScope header_clip(graphics, clip_coordinate(position.x), clip_coordinate(position.y),
+                                  clip_extent(size.x), clip_extent(tab_height_));
             for (std::size_t i = 0; i < tabs_.size(); ++i) {
                 const float tab_width = tab_layout.widths[i];
                 const float x = tab_x;
@@ -2485,9 +2526,9 @@ void zgui::TabBar::draw() {
         }
 
         const zgui::Rect clip_rect = child_clip_rect();
-        ClipScope clip(graphics, static_cast<int>(clip_rect.position.x),
-                       static_cast<int>(clip_rect.position.y), static_cast<int>(clip_rect.size.x),
-                       static_cast<int>(clip_rect.size.y));
+        ClipScope clip(graphics, clip_coordinate(clip_rect.position.x),
+                       clip_coordinate(clip_rect.position.y), clip_extent(clip_rect.size.x),
+                       clip_extent(clip_rect.size.y));
         tabs_[active_tab_].page->draw();
     } else {
         UIElement::draw();
@@ -2824,6 +2865,12 @@ zgui::GroupBox::GroupBox(std::string title) {
 }
 
 void zgui::GroupBox::set_sub_tabs(const std::shared_ptr<zgui::SubTabBar>& tabs) {
+    if (sub_tabs_ == tabs) {
+        layout_sub_tabs();
+        return;
+    }
+    if (sub_tabs_)
+        sub_tabs_->set_parent(nullptr);
     sub_tabs_ = tabs;
     if (sub_tabs_)
         sub_tabs_->set_parent(this);
@@ -2919,9 +2966,9 @@ void zgui::GroupBox::draw() {
         graphics.draw_text(title, zgui::Point(title_x, position.y), theme.text_primary);
 
     const zgui::Rect clip_rect = child_clip_rect();
-    ClipScope clip(graphics, static_cast<int>(clip_rect.position.x),
-                   static_cast<int>(clip_rect.position.y), static_cast<int>(clip_rect.size.x),
-                   static_cast<int>(clip_rect.size.y));
+    ClipScope clip(graphics, clip_coordinate(clip_rect.position.x),
+                   clip_coordinate(clip_rect.position.y), clip_extent(clip_rect.size.x),
+                   clip_extent(clip_rect.size.y));
     if (sub_tabs_)
         sub_tabs_->draw();
     else
@@ -2968,11 +3015,11 @@ float zgui::GroupBox::content_right() const {
 }
 
 std::size_t zgui::GroupBox::widget_count() const {
-    return UIElement::widget_count() + (sub_tabs_ ? sub_tabs_->widget_count() : 0);
+    return UIElement::widget_count();
 }
 
 std::size_t zgui::GroupBox::visible_widget_count() const {
-    return UIElement::visible_widget_count() + (sub_tabs_ ? sub_tabs_->visible_widget_count() : 0);
+    return UIElement::visible_widget_count();
 }
 
 zgui::StackLayout::StackLayout(zgui::UIElement& parent, float start_y, float padding, float gap)
